@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Step 1: stand.fm から音声をダウンロードする
+Step 1: YouTube / stand.fm から音声をダウンロードする
 """
 
 import subprocess
@@ -8,7 +8,10 @@ import sys
 import os
 from pathlib import Path
 
-EPISODE_URL = "https://stand.fm/episodes/68024083dac4656db0f6bbdc"
+# ダウンロード対象URL
+YOUTUBE_URL = "https://youtu.be/i0S3vkVVNj8"
+STANDFM_URL = "https://stand.fm/episodes/68024083dac4656db0f6bbdc"
+
 OUTPUT_DIR = Path(__file__).parent / "audio"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -26,37 +29,48 @@ def download_with_ytdlp(url: str, output_dir: Path) -> bool:
         url,
     ]
     print(f"実行: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=False)
+    result = subprocess.run(cmd)
     return result.returncode == 0
 
 
 def main():
     print("=" * 60)
-    print("stand.fm 音声ダウンロード")
+    print("音声ダウンロード")
     print("=" * 60)
 
-    success = download_with_ytdlp(EPISODE_URL, OUTPUT_DIR)
+    # YouTube を優先試行
+    print(f"\nYouTube からダウンロード試行...")
+    print(f"URL: {YOUTUBE_URL}")
+    success = download_with_ytdlp(YOUTUBE_URL, OUTPUT_DIR)
 
     if success:
         files = list(OUTPUT_DIR.glob("*.wav")) + list(OUTPUT_DIR.glob("*.mp3"))
         if files:
             print(f"\n✓ ダウンロード成功: {files[-1]}")
             print(f"\n次のステップ: python3 2_preprocess_audio.py")
-        else:
-            success = False
+            return
 
-    if not success:
-        print("\n⚠ 自動ダウンロードに失敗しました。")
-        print("\n手動ダウンロード方法:")
-        print("1. ブラウザで以下URLを開く:")
-        print(f"   {EPISODE_URL}")
-        print("2. ブラウザの開発者ツール (F12) → Network タブを開く")
-        print("3. 音声を再生する")
-        print("4. '.m4a' または '.mp3' のリクエストを探す")
-        print("5. そのURLをコピーして以下でダウンロード:")
-        print("   wget -O audio/episode.m4a '<URL>'")
-        print("\nまたは Chrome拡張 'Audio Downloader Prime' を使用")
-        print(f"\nダウンロードしたファイルを: {OUTPUT_DIR}/ に配置してください")
+    # 手動ダウンロード案内
+    print("\n" + "=" * 60)
+    print("⚠ 自動ダウンロード失敗 → 手動でダウンロードしてください")
+    print("=" * 60)
+    print(f"""
+【方法1】yt-dlp をローカルPC で実行（推奨）
+  yt-dlp -x --audio-format wav -o "voice.%(ext)s" \\
+    "{YOUTUBE_URL}"
+  → 生成された voice.wav を voice_clone/audio/ に配置
+
+【方法2】ブラウザ拡張を使用
+  1. Chrome拡張「yt-dlp for YouTube」や「4K Video Downloader」
+  2. {YOUTUBE_URL} を開いて音声ダウンロード
+  3. voice_clone/audio/ に配置
+
+【方法3】オンラインツール
+  ※ 音質劣化の可能性あり
+
+ダウンロード後:
+  python3 2_preprocess_audio.py
+""")
 
 
 if __name__ == "__main__":
