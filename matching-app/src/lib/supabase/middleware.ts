@@ -29,8 +29,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const isDemo = request.nextUrl.pathname.startsWith('/demo')
   const protectedPaths = ['/discover', '/matches', '/chat', '/profile', '/search']
-  const isProtected = protectedPaths.some((p) =>
+  const isProtected = !isDemo && protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   )
 
@@ -40,7 +41,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  if (!isDemo && user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/discover'
     return NextResponse.redirect(url)
