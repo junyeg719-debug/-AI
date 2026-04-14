@@ -1,203 +1,239 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
-import { Heart, X, Info, MapPin, Briefcase } from 'lucide-react'
-import { CANDIDATE_PROFILES, type DemoProfile } from '@/lib/demo-data'
+import { useState } from 'react'
+import { SlidersHorizontal, Camera, CheckCircle, Heart } from 'lucide-react'
+import { CANDIDATE_PROFILES, MATCHED_PROFILES, type DemoProfile } from '@/lib/demo-data'
+
+const SORT_TABS = [
+  { label: 'いいね！が多い順', key: 'likes' },
+  { label: 'ログイン順', key: 'login' },
+  { label: 'おすすめ順', key: 'recommend' },
+  { label: '新メンバー', key: 'new' },
+  { label: 'マイQ&A', key: 'qa' },
+]
+
+const ALL_BROWSE = [...MATCHED_PROFILES, ...CANDIDATE_PROFILES]
+
+function sortProfiles(profiles: DemoProfile[], key: string): DemoProfile[] {
+  switch (key) {
+    case 'likes':
+      return [...profiles].sort((a, b) => b.likeCount - a.likeCount)
+    case 'login':
+      return [...profiles].filter((p) => p.isOnline).concat(profiles.filter((p) => !p.isOnline))
+    case 'new':
+      return [...profiles].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )
+    default:
+      return profiles
+  }
+}
 
 export default function DemoDiscoverPage() {
-  const [profiles, setProfiles] = useState<DemoProfile[]>(CANDIDATE_PROFILES)
-  const [matchedProfile, setMatchedProfile] = useState<DemoProfile | null>(null)
-  const [passedCount, setPassedCount] = useState(0)
-  const [likedCount, setLikedCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('recommend')
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
 
-  const handleSwipe = useCallback((direction: 'like' | 'pass') => {
-    if (profiles.length === 0) return
-    const target = profiles[0]
+  const profiles = sortProfiles(ALL_BROWSE, activeTab)
 
-    if (direction === 'like') {
-      setLikedCount((c) => c + 1)
-      // 3人目にLikeしたときマッチ演出
-      if (likedCount === 1) {
-        setMatchedProfile(target)
-        setTimeout(() => setMatchedProfile(null), 2500)
-      }
-    } else {
-      setPassedCount((c) => c + 1)
-    }
-
-    setProfiles((prev) => prev.slice(1))
-  }, [profiles, likedCount])
-
-  const refillProfiles = () => {
-    setProfiles(CANDIDATE_PROFILES)
-    setLikedCount(0)
-    setPassedCount(0)
+  const toggleLike = (id: string) => {
+    setLikedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="bg-white px-4 pt-10 pb-4 shadow-sm flex items-center justify-center gap-2">
-        <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-        <h1 className="text-xl font-bold text-gray-900">Hana</h1>
-      </div>
-
-      {/* Stats */}
-      <div className="flex items-center justify-center gap-6 py-2 text-sm">
-        <span className="text-gray-400">❤️ {likedCount}件いいね</span>
-        <span className="text-gray-400">✕ {passedCount}件スキップ</span>
-      </div>
-
-      {/* Card Stack */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-2">
-        {profiles.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="text-5xl mb-4">🎉</div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">全員チェックしました！</h3>
-            <p className="text-gray-400 text-sm mb-6">いいねした{likedCount}人からの返事を待ちましょう</p>
-            <button
-              onClick={refillProfiles}
-              className="px-6 py-2.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-xl hover:opacity-90 transition shadow-lg shadow-rose-200"
-            >
-              もう一度見る（デモ）
-            </button>
+    <div className="min-h-screen">
+      {/* ── Header ── */}
+      <div className="bg-white px-4 pt-10 pb-0 sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-baseline gap-1">
+            <h1 className="text-2xl font-bold" style={{ color: '#7E2841' }}>魅力マッチ</h1>
+            <span className="text-xs text-gray-400 font-normal">by 魅力大学</span>
           </div>
-        ) : (
-          <div
-            className="relative w-full"
-            style={{ height: 'calc(100vh - 280px)', maxHeight: '500px' }}
-          >
-            {profiles.slice(0, 3).map((profile, index) => (
+          <button className="p-2 rounded-full hover:bg-gray-100 transition">
+            <SlidersHorizontal className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Sort tabs */}
+        <div className="flex overflow-x-auto gap-0 -mx-4 px-4 pb-0 no-scrollbar">
+          {SORT_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="flex-shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap"
+              style={{ color: activeTab === tab.key ? '#7E2841' : '#9CA3AF' }}
+            >
+              {tab.label}
+              {activeTab === tab.key && (
+                <span
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                  style={{ background: '#7E2841' }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Story circles ── */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar">
+          {/* Pickup member circle */}
+          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}
+            >
+              <div className="text-center leading-tight">
+                <div className="text-[9px]">本日の</div>
+                <div className="text-[9px]">Pickup</div>
+              </div>
+            </div>
+            <span className="text-[10px] text-gray-500 text-center w-14 truncate">Pickup</span>
+          </div>
+          {profiles.slice(0, 6).map((p) => (
+            <div key={p.id} className="flex-shrink-0 flex flex-col items-center gap-1">
               <div
-                key={profile.id}
-                className="absolute inset-0 transition-transform"
+                className={`w-14 h-14 rounded-full bg-gradient-to-br ${p.color} flex items-center justify-center text-2xl relative shadow-sm`}
                 style={{
-                  transform: `scale(${1 - index * 0.03}) translateY(${index * 8}px)`,
-                  zIndex: 10 - index,
+                  border: p.isOnline ? '2px solid #22c55e' : '2px solid #E8E0E2',
                 }}
               >
-                <SwipeCard profile={profile} onSwipe={handleSwipe} isTop={index === 0} />
+                <span>{p.emoji}</span>
+                {p.isOnline && (
+                  <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                )}
               </div>
-            ))}
-          </div>
-        )}
+              <span className="text-[10px] text-gray-500 text-center w-14 truncate">{p.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Buttons */}
-      {profiles.length > 0 && (
-        <div className="pb-24 pt-2 flex items-center justify-center gap-8">
-          <button
-            onClick={() => handleSwipe('pass')}
-            className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition border border-gray-100"
-          >
-            <X className="w-7 h-7 text-gray-400" />
-          </button>
-          <button
-            onClick={() => handleSwipe('like')}
-            className="w-20 h-20 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-xl shadow-rose-200 hover:scale-110 active:scale-95 transition"
-          >
-            <Heart className="w-9 h-9 text-white fill-white" />
-          </button>
-        </div>
-      )}
-
-      {/* Match animation */}
-      {matchedProfile && (
-        <div className="fixed inset-0 bg-gradient-to-br from-rose-400/90 to-pink-600/90 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="text-center">
-            <div className="text-8xl mb-4 animate-bounce">{matchedProfile.emoji}</div>
-            <div className="text-6xl mb-4">💕</div>
-            <h2 className="text-4xl font-bold text-white mb-2">マッチ成立!</h2>
-            <p className="text-white/90 text-xl font-medium">{matchedProfile.name}さんと</p>
-            <p className="text-white/70 mt-2">メッセージを送ってみよう</p>
+      {/* ── Promotional banner ── */}
+      <div className="px-4 py-3">
+        <div
+          className="rounded-2xl p-4 text-white relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #7E2841 0%, #A03558 60%, #C0476E 100%)' }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-lg">🪙</span>
+                <span className="text-xs font-medium opacity-90">期間限定</span>
+              </div>
+              <p className="text-lg font-bold leading-tight">ポイント増量</p>
+              <p className="text-xs opacity-80 mt-0.5">キャンペーン開催中！</p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-black opacity-20 absolute right-4 top-2">✦</div>
+              <button className="bg-white text-[#7E2841] text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                詳細を見る
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ── Profile grid ── */}
+      <div className="px-4 pb-4">
+        <div className="grid grid-cols-2 gap-3">
+          {profiles.map((profile) => (
+            <ProfileCard
+              key={profile.id}
+              profile={profile}
+              liked={likedIds.has(profile.id)}
+              onLike={() => toggleLike(profile.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   )
 }
 
-// ============================
-// SwipeCard (デモ内蔵版)
-// ============================
-function SwipeCard({
+// ── Profile card ──────────────────────────────
+function ProfileCard({
   profile,
-  onSwipe,
-  isTop,
+  liked,
+  onLike,
 }: {
   profile: DemoProfile
-  onSwipe: (d: 'like' | 'pass') => void
-  isTop: boolean
+  liked: boolean
+  onLike: () => void
 }) {
-  const [showInfo, setShowInfo] = useState(false)
-  const x = useMotionValue(0)
-  const rotate = useTransform(x, [-200, 200], [-20, 20])
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
-  const likeOp = useTransform(x, [0, 50, 130], [0, 1, 1])
-  const passOp = useTransform(x, [-130, -50, 0], [1, 1, 0])
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.x > 100) onSwipe('like')
-    else if (info.offset.x < -100) onSwipe('pass')
-  }
-
   return (
-    <motion.div
-      style={{ x, rotate, opacity }}
-      drag={isTop ? 'x' : false}
-      dragConstraints={{ left: 0, right: 0 }}
-      onDragEnd={handleDragEnd}
-      className={`absolute inset-0 cursor-grab active:cursor-grabbing select-none ${isTop ? 'z-10' : 'z-0'}`}
-      whileTap={{ scale: 1.02 }}
-    >
-      <div className="w-full h-full rounded-3xl overflow-hidden shadow-2xl bg-white">
-        {/* Photo area */}
-        <div
-          className={`relative w-full bg-gradient-to-br ${profile.color} flex items-center justify-center`}
-          style={{ height: showInfo ? '40%' : '62%' }}
-        >
-          <span className="text-8xl">{profile.emoji}</span>
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+      {/* Photo area */}
+      <div
+        className={`relative bg-gradient-to-br ${profile.color} flex items-center justify-center`}
+        style={{ aspectRatio: '3/4' }}
+      >
+        <span className="text-6xl">{profile.emoji}</span>
 
-          <motion.div style={{ opacity: likeOp }} className="absolute top-5 left-5 bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-xl rotate-[-15deg] border-2 border-white shadow">
-            LIKE
-          </motion.div>
-          <motion.div style={{ opacity: passOp }} className="absolute top-5 right-5 bg-gray-600 text-white px-4 py-2 rounded-xl font-bold text-xl rotate-[15deg] border-2 border-white shadow">
-            PASS
-          </motion.div>
-
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); setShowInfo(!showInfo) }}
-            className="absolute bottom-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow"
-          >
-            <Info className="w-4 h-4 text-gray-700" />
-          </button>
+        {/* Photo count */}
+        <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[11px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+          <Camera className="w-3 h-3" />
+          <span>{profile.photoCount}</span>
         </div>
 
-        {/* Info */}
-        <div className="p-5">
-          <div className="flex items-end gap-2 mb-1">
-            <h2 className="text-2xl font-bold text-gray-900">{profile.name}</h2>
-            <span className="text-lg text-gray-500 font-medium">{profile.age}歳</span>
+        {/* NEW badge */}
+        {new Date(profile.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+          <div
+            className="absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#7E2841' }}
+          >
+            NEW
           </div>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.location}</span>
-            <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{profile.occupation}</span>
-          </div>
+        )}
 
-          {showInfo && (
-            <div className="mt-3 space-y-2">
-              <p className="text-gray-700 text-sm leading-relaxed">{profile.bio}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {profile.interests.slice(0, 5).map((i) => (
-                  <span key={i} className="px-2 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-medium">{i}</span>
-                ))}
-              </div>
-            </div>
+        {/* Like button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onLike() }}
+          className="absolute bottom-2 left-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm transition-transform active:scale-90"
+        >
+          <Heart
+            className="w-4 h-4 transition-colors"
+            style={{ color: liked ? '#7E2841' : '#D1D5DB', fill: liked ? '#7E2841' : 'none' }}
+          />
+        </button>
+      </div>
+
+      {/* Info */}
+      <div className="px-2.5 py-2">
+        <div className="flex items-center gap-1 mb-0.5">
+          {profile.isOnline && (
+            <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+          )}
+          <span className="text-[13px] font-semibold text-gray-800 truncate">
+            {profile.age}歳 {profile.location.replace('府', '').replace('県', '').replace('都', '')}
+          </span>
+          {profile.isVerified && (
+            <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#3B82F6' }} />
           )}
         </div>
+        <div className="flex items-center gap-2 text-[11px]" style={{ color: '#9CA3AF' }}>
+          <span className="flex items-center gap-0.5">
+            <span>👍</span>
+            <span>{profile.likeCount}</span>
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Camera className="w-3 h-3" />
+            <span>{profile.photoCount}</span>
+          </span>
+          <span style={{ color: '#7E2841' }} className="font-medium">
+            ♥{profile.matchPercent}%
+          </span>
+        </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

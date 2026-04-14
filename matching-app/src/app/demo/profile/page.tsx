@@ -1,13 +1,44 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Briefcase, Edit2 } from 'lucide-react'
+import {
+  Edit2,
+  CheckCircle,
+  Camera,
+  ChevronRight,
+  Heart,
+  Eye,
+  MessageCircle,
+} from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
 
+const STATS = [
+  { label: 'いいね！', value: '130', icon: Heart },
+  { label: '足あと', value: '28', icon: Eye },
+  { label: 'マッチ', value: '3', icon: MessageCircle },
+]
+
+const PROFILE_ITEMS = [
+  { label: '年齢', value: `${DEMO_USER.age}歳` },
+  { label: '居住地', value: DEMO_USER.location },
+  { label: '職業', value: DEMO_USER.occupation },
+  { label: '身長', value: `${DEMO_USER.height}cm` },
+  { label: '体型', value: DEMO_USER.bodyType },
+  { label: 'タバコ', value: DEMO_USER.smoking },
+]
+
+const MENU_ITEMS = [
+  '基本プロフィール編集',
+  '写真・動画設定',
+  '検索条件設定',
+  'プレミアムプラン',
+  'プッシュ通知設定',
+  'ヘルプ・お問い合わせ',
+]
+
 export default function DemoProfilePage() {
-  const [editing, setEditing] = useState(false)
   const [bio, setBio] = useState(DEMO_USER.bio)
-  const [name, setName] = useState(DEMO_USER.name)
+  const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const handleSave = () => {
@@ -16,126 +47,157 @@ export default function DemoProfilePage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const profile = DEMO_USER
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: '#F8F5F6' }}>
       {/* Header */}
-      <div className="bg-white px-4 pt-10 pb-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white px-4 pt-10 pb-4 sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">マイプロフィール</h1>
           <button
-            onClick={() => setEditing(!editing)}
-            className={`p-2 rounded-full transition ${editing ? 'bg-rose-500' : 'hover:bg-gray-100'}`}
+            onClick={() => setEditing((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition"
+            style={{
+              background: editing ? '#7E2841' : '#F5E6EA',
+              color: editing ? '#fff' : '#7E2841',
+            }}
           >
-            <Edit2 className={`w-5 h-5 ${editing ? 'text-white' : 'text-gray-600'}`} />
+            <Edit2 className="w-3.5 h-3.5" />
+            {editing ? '編集中' : '編集'}
           </button>
-        </div>
-
-        <div className="flex items-center gap-5">
-          <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${profile.color} flex items-center justify-center text-4xl shadow-lg`}>
-            {profile.emoji}
-          </div>
-          <div>
-            {editing ? (
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="text-2xl font-bold text-gray-900 border-b-2 border-rose-400 focus:outline-none bg-transparent w-32"
-              />
-            ) : (
-              <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
-            )}
-            <p className="text-gray-500 text-sm">{profile.age}歳</p>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="flex items-center gap-1 text-gray-500 text-xs">
-                <MapPin className="w-3 h-3" /> {profile.location}
-              </span>
-              <span className="flex items-center gap-1 text-gray-500 text-xs">
-                <Briefcase className="w-3 h-3" /> {profile.occupation}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="px-4 py-4 space-y-4">
-        {saved && (
-          <div className="bg-green-50 text-green-700 px-4 py-2 rounded-xl text-sm font-medium text-center">
-            ✓ 保存しました（デモ）
+      {/* Profile hero */}
+      <div className="bg-white px-4 py-6 mb-3">
+        <div className="flex items-center gap-4">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div
+              className={`w-20 h-20 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-4xl shadow-md`}
+            >
+              {DEMO_USER.emoji}
+            </div>
+            <button
+              className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
+              style={{ background: '#7E2841' }}
+            >
+              <Camera className="w-3 h-3 text-white" />
+            </button>
           </div>
-        )}
 
-        {/* Bio */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-500 mb-2">自己紹介</h3>
-          {editing ? (
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={3}
-              className="w-full text-gray-800 text-sm leading-relaxed focus:outline-none resize-none border border-rose-200 rounded-xl p-2"
-            />
-          ) : (
-            <p className="text-gray-800 text-sm leading-relaxed">{bio}</p>
-          )}
-        </div>
-
-        {/* Interests */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-500 mb-3">趣味・興味</h3>
-          <div className="flex flex-wrap gap-2">
-            {profile.interests.map((interest) => (
-              <span key={interest} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-full text-sm font-medium">
-                {interest}
-              </span>
-            ))}
+          {/* Name & status */}
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h2 className="text-xl font-bold text-gray-900">{DEMO_USER.name}</h2>
+              <CheckCircle className="w-4 h-4 text-blue-500" />
+            </div>
+            <p className="text-gray-500 text-sm">{DEMO_USER.age}歳 ・{DEMO_USER.location}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{DEMO_USER.occupation}</p>
           </div>
         </div>
 
-        {/* Details */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-500 mb-3">基本情報</h3>
-          <div className="space-y-2">
-            {[
-              { label: '性別', value: '女性' },
-              { label: '探している相手', value: '男性' },
-              { label: '居住地', value: profile.location },
-              { label: '職業', value: profile.occupation },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                <span className="text-gray-500 text-sm">{label}</span>
-                <span className="text-gray-800 text-sm font-medium">{value}</span>
-              </div>
-            ))}
-          </div>
+        {/* Stats row */}
+        <div className="flex mt-5 divide-x divide-gray-100">
+          {STATS.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
+              <Icon className="w-4 h-4 text-gray-400" />
+              <span className="text-lg font-bold text-gray-900">{value}</span>
+              <span className="text-xs text-gray-400">{label}</span>
+            </div>
+          ))}
         </div>
+      </div>
 
+      {/* Bio */}
+      <div className="bg-white px-4 py-4 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-gray-700">自己紹介</h3>
+        </div>
         {editing ? (
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={4}
+            className="w-full text-sm text-gray-800 leading-relaxed focus:outline-none resize-none rounded-xl border p-3"
+            style={{ borderColor: '#7E2841' }}
+          />
+        ) : (
+          <p className="text-gray-700 text-sm leading-relaxed">{bio}</p>
+        )}
+      </div>
+
+      {/* Interests */}
+      <div className="bg-white px-4 py-4 mb-3">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">趣味・興味</h3>
+        <div className="flex flex-wrap gap-2">
+          {DEMO_USER.interests.map((interest) => (
+            <span
+              key={interest}
+              className="px-3 py-1.5 rounded-full text-sm font-medium"
+              style={{ background: '#F5E6EA', color: '#7E2841' }}
+            >
+              {interest}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Basic info */}
+      <div className="bg-white px-4 py-4 mb-3">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">基本情報</h3>
+        <div className="space-y-0 divide-y divide-gray-50">
+          {PROFILE_ITEMS.map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-gray-500">{label}</span>
+              <span className="text-sm font-medium text-gray-800">{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Menu */}
+      <div className="bg-white px-4 py-2 mb-3">
+        {MENU_ITEMS.map((item) => (
+          <button
+            key={item}
+            className="w-full flex items-center justify-between py-3.5 border-b border-gray-50 last:border-0 active:bg-gray-50 transition text-left"
+          >
+            <span className="text-sm text-gray-800">{item}</span>
+            <ChevronRight className="w-4 h-4 text-gray-300" />
+          </button>
+        ))}
+      </div>
+
+      {/* Save button */}
+      {editing && (
+        <div className="px-4 pb-6">
+          {saved && (
+            <div
+              className="text-center text-sm font-medium py-2 mb-2 rounded-xl"
+              style={{ background: '#F0FDF4', color: '#16A34A' }}
+            >
+              ✓ 保存しました
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => setEditing(false)}
-              className="flex-1 py-3 border border-gray-200 text-gray-600 font-semibold rounded-2xl"
+              className="flex-1 py-3.5 border border-gray-200 text-gray-600 font-semibold rounded-2xl"
             >
               キャンセル
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl shadow-lg shadow-rose-200"
+              className="flex-1 py-3.5 text-white font-bold rounded-2xl shadow-lg transition active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}
             >
               保存する
             </button>
           </div>
-        ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl hover:opacity-90 transition shadow-lg shadow-rose-200"
-          >
-            <Edit2 className="w-4 h-4" />
-            プロフィールを編集
-          </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      <div className="h-4" />
     </div>
   )
 }
