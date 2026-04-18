@@ -33,21 +33,9 @@ jobs:
       - name: Prepare demo-only static build
         working-directory: matching-app
         run: |
-          mv "src/app/(main)" src/app/_main
+          mv 'src/app/(main)' src/app/_main
           mv src/app/auth src/app/_auth
-          node -e "
-          const fs = require('fs');
-          const config = \`import type { NextConfig } from 'next';
-          const nextConfig: NextConfig = {
-            output: 'export',
-            trailingSlash: true,
-            basePath: '/-AI',
-            images: { unoptimized: true },
-          };
-          export default nextConfig;
-          \`;
-          fs.writeFileSync('next.config.ts', config);
-          "
+          printf 'import type { NextConfig } from "next";\nconst nextConfig: NextConfig = {\n  output: "export",\n  trailingSlash: true,\n  basePath: "/-AI",\n  images: { unoptimized: true },\n};\nexport default nextConfig;\n' > next.config.ts
 
       - name: Build static demo
         working-directory: matching-app
