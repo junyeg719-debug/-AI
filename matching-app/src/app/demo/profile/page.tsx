@@ -6,19 +6,24 @@ import { DEMO_USER } from '@/lib/demo-data'
 
 // ── Field definitions ──────────────────────────────────────────
 
-const BASIC_FIELDS = [
+type FieldType = 'select' | 'multiselect' | 'text' | 'number'
+type AnyField = { key: string; label: string; type: FieldType; options?: string[]; placeholder?: string; min?: number; max?: number; unit?: string }
+
+const PREFS = ['北海道','青森','岩手','宮城','秋田','山形','福島','茨城','栃木','群馬','埼玉','千葉','東京','神奈川','新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知','三重','滋賀','京都','大阪','兵庫','奈良','和歌山','鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知','福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄']
+
+const BASIC_FIELDS: AnyField[] = [
   { key: 'height', label: '身長', type: 'number', unit: 'cm', min: 140, max: 200 },
   { key: 'bodyType', label: '体型', type: 'select', options: ['スリム', '普通', 'がっしり', 'ぽっちゃり', 'グラマー'] },
   { key: 'bloodType', label: '血液型', type: 'select', options: ['A', 'B', 'O', 'AB', 'わからない'] },
-  { key: 'location', label: '居住地', type: 'select', options: ['北海道','青森','岩手','宮城','秋田','山形','福島','茨城','栃木','群馬','埼玉','千葉','東京','神奈川','新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知','三重','滋賀','京都','大阪','兵庫','奈良','和歌山','鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知','福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄'] },
-  { key: 'birthplace', label: '出身地', type: 'select', options: ['北海道','青森','岩手','宮城','秋田','山形','福島','茨城','栃木','群馬','埼玉','千葉','東京','神奈川','新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知','三重','滋賀','京都','大阪','兵庫','奈良','和歌山','鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知','福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄'] },
+  { key: 'location', label: '居住地', type: 'select', options: PREFS },
+  { key: 'birthplace', label: '出身地', type: 'select', options: PREFS },
   { key: 'jobType', label: '職種', type: 'select', options: ['会社員（上場企業）','会社員（非上場）','公務員','自営業','フリーランス','医療・福祉','教育','IT・エンジニア','クリエイティブ','金融・保険','不動産','サービス業','その他'] },
   { key: 'education', label: '学歴', type: 'select', options: ['中卒','高卒','専門学校卒','短大卒','大学卒','大学院卒'] },
   { key: 'income', label: '年収', type: 'select', options: ['200万円未満','200〜400万円未満','400〜600万円未満','600〜800万円未満','800〜1000万円未満','1000万円以上','答えたくない'] },
   { key: 'smoking', label: 'タバコ', type: 'select', options: ['吸わない','吸う','電子タバコのみ','やめた'] },
-] as const
+]
 
-const DETAIL_FIELDS = [
+const DETAIL_FIELDS: AnyField[] = [
   { key: 'nickname', label: 'ニックネーム', type: 'text', placeholder: '例：たくや' },
   { key: 'siblings', label: '兄弟姉妹', type: 'select', options: ['一人っ子','長男','次男','三男以上','長女','次女','三女以上'] },
   { key: 'language', label: '話せる言語', type: 'multiselect', options: ['日本語','英語','中国語','韓国語','フランス語','スペイン語','その他'] },
@@ -39,9 +44,7 @@ const DETAIL_FIELDS = [
   { key: 'holiday', label: '休日', type: 'select', options: ['土日','日曜のみ','月火','水木','不定休','その他'] },
   { key: 'alcohol', label: 'お酒', type: 'select', options: ['飲まない','ときどき飲む','よく飲む','毎日飲む'] },
   { key: 'hobbies', label: '好きなこと・趣味', type: 'multiselect', options: ['スポーツ','映画・ドラマ','音楽','読書','旅行','グルメ','カフェ巡り','アウトドア','ゲーム','料理','写真','アート','ファッション','ヨガ・ジム','その他'] },
-] as const
-
-type AnyField = typeof BASIC_FIELDS[number] | typeof DETAIL_FIELDS[number]
+]
 
 const INITIAL_VALUES: Record<string, string | string[]> = {
   height: '173', bodyType: '普通', bloodType: '', location: '滋賀', birthplace: '',
@@ -115,7 +118,7 @@ function PickerSheet({
               ))}
             </div>
           )}
-          {(field.type === 'select' || field.type === 'multiselect') && 'options' in field && (
+          {(field.type === 'select' || field.type === 'multiselect') && field.options && (
             <div className="space-y-1 py-2">
               {field.options.map(opt => {
                 const selected = field.type === 'multiselect' ? (Array.isArray(draft) && draft.includes(opt)) : draft === opt
@@ -140,7 +143,6 @@ function PickerSheet({
 
 function ProfileRow({ field, value, onTap }: { field: AnyField; value: string | string[]; onTap: () => void }) {
   const { text, isSet } = displayValue(field.key, value)
-  const hasChevron = field.type !== 'select' || field.key === 'location' || field.key === 'birthplace' || field.key === 'language' || field.key === 'personality' || field.key === 'pet' || field.key === 'hobbies'
   return (
     <button onClick={onTap} className="w-full flex items-center justify-between py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 transition text-left">
       <span className="text-sm text-gray-700">{field.label}</span>
