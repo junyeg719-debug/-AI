@@ -130,6 +130,28 @@ export default function ProfileDashboard() {
             <path d="M9 18l6-6-6-6"/>
           </svg>
         </a>
+
+        <a
+          href="https://mote-snap.com/?utm_source=ig&utm_medium=social&utm_content=link_in_bio"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white shadow-sm active:opacity-80 transition"
+        >
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-sm text-gray-800">mote-snap.com</p>
+            <p className="text-gray-400 text-xs mt-0.5">公式サイトを見る</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
