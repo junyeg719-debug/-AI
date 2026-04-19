@@ -1,90 +1,196 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronRight, Camera, Heart, Eye, MessageCircle, CheckCircle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ChevronRight, Camera, X, Check } from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
 
-const BASIC_ITEMS = [
-  { label: '身長', value: '173cm', set: true },
-  { label: '体型', value: '普通', set: true },
-  { label: '血液型', value: '選択する', set: false },
-  { label: '居住地', value: '日本 滋賀', set: true, chevron: true },
-  { label: '出身地', value: '設定する', set: false, chevron: true },
-  { label: '職種', value: 'エンジニア', set: true },
-  { label: '学歴', value: '大学卒', set: true },
-  { label: '年収', value: '400万円以上〜600万円未満', set: true },
-  { label: 'タバコ', value: '吸わない', set: true },
-]
+// ── Field definitions ──────────────────────────────────────────
 
-const DETAIL_ITEMS = [
-  { label: 'ニックネーム', value: '俊也', set: true, chevron: true },
-  { label: '兄弟姉妹', value: '長男', set: true },
-  { label: '話せる言語', value: '日本語', set: true, chevron: true },
-  { label: '学校名', value: '入力する', set: false, chevron: true },
-  { label: '職業名', value: '入力する', set: false, chevron: true },
-  { label: '結婚歴', value: '独身（未婚）', set: true },
-  { label: '子供の有無', value: 'なし', set: true },
-  { label: '結婚に対する意思', value: '2〜3年のうちに', set: true },
-  { label: '子供が欲しいか', value: '子供は欲しい', set: true },
-  { label: '家事・育児', value: '積極的に参加したい', set: true },
-  { label: '出会うまでの希望', value: '気が合えば会いたい', set: true },
-  { label: 'デート費用', value: '選択する', set: false },
-  { label: '16タイプ診断', value: '選択する', set: false },
-  { label: '性格・タイプ', value: '真面目, 誠実, 優しい', set: true, chevron: true },
-  { label: '社交性', value: '徐々に仲良くなる', set: true },
-  { label: '同居人', value: '一人暮らし', set: true },
-  { label: '飼っているペット', value: '設定する', set: false, chevron: true },
-  { label: '休日', value: '土日', set: true },
-  { label: 'お酒', value: 'ときどき飲む', set: true },
-  { label: '好きなこと・趣味', value: '設定する', set: false, chevron: true },
-]
+const BASIC_FIELDS = [
+  { key: 'height', label: '身長', type: 'number', unit: 'cm', min: 140, max: 200 },
+  { key: 'bodyType', label: '体型', type: 'select', options: ['スリム', '普通', 'がっしり', 'ぽっちゃり', 'グラマー'] },
+  { key: 'bloodType', label: '血液型', type: 'select', options: ['A', 'B', 'O', 'AB', 'わからない'] },
+  { key: 'location', label: '居住地', type: 'select', options: ['北海道','青森','岩手','宮城','秋田','山形','福島','茨城','栃木','群馬','埼玉','千葉','東京','神奈川','新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知','三重','滋賀','京都','大阪','兵庫','奈良','和歌山','鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知','福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄'] },
+  { key: 'birthplace', label: '出身地', type: 'select', options: ['北海道','青森','岩手','宮城','秋田','山形','福島','茨城','栃木','群馬','埼玉','千葉','東京','神奈川','新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知','三重','滋賀','京都','大阪','兵庫','奈良','和歌山','鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知','福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄'] },
+  { key: 'jobType', label: '職種', type: 'select', options: ['会社員（上場企業）','会社員（非上場）','公務員','自営業','フリーランス','医療・福祉','教育','IT・エンジニア','クリエイティブ','金融・保険','不動産','サービス業','その他'] },
+  { key: 'education', label: '学歴', type: 'select', options: ['中卒','高卒','専門学校卒','短大卒','大学卒','大学院卒'] },
+  { key: 'income', label: '年収', type: 'select', options: ['200万円未満','200〜400万円未満','400〜600万円未満','600〜800万円未満','800〜1000万円未満','1000万円以上','答えたくない'] },
+  { key: 'smoking', label: 'タバコ', type: 'select', options: ['吸わない','吸う','電子タバコのみ','やめた'] },
+] as const
 
-const STATS = [
-  { label: 'いいね！', value: '130', icon: Heart },
-  { label: '足あと', value: '28', icon: Eye },
-  { label: 'マッチ', value: '3', icon: MessageCircle },
-]
+const DETAIL_FIELDS = [
+  { key: 'nickname', label: 'ニックネーム', type: 'text', placeholder: '例：たくや' },
+  { key: 'siblings', label: '兄弟姉妹', type: 'select', options: ['一人っ子','長男','次男','三男以上','長女','次女','三女以上'] },
+  { key: 'language', label: '話せる言語', type: 'multiselect', options: ['日本語','英語','中国語','韓国語','フランス語','スペイン語','その他'] },
+  { key: 'school', label: '学校名', type: 'text', placeholder: '例：○○大学' },
+  { key: 'jobName', label: '職業名', type: 'text', placeholder: '例：ソフトウェアエンジニア' },
+  { key: 'marriage', label: '結婚歴', type: 'select', options: ['独身（未婚）','離婚歴あり（子なし）','離婚歴あり（子あり）'] },
+  { key: 'children', label: '子供の有無', type: 'select', options: ['なし','あり（同居）','あり（別居）'] },
+  { key: 'marriageIntent', label: '結婚に対する意思', type: 'select', options: ['できれば1年以内','2〜3年のうちに','いつかはしたい','結婚は考えていない','相手による'] },
+  { key: 'wantChildren', label: '子供が欲しいか', type: 'select', options: ['子供は欲しい','どちらでもいい','欲しくない','相手による'] },
+  { key: 'housework', label: '家事・育児', type: 'select', options: ['積極的に参加したい','協力したい','相手に任せたい','状況による'] },
+  { key: 'meetingHope', label: '出会うまでの希望', type: 'select', options: ['気が合えば会いたい','まずは友達から','ゆっくり仲良くなりたい','すぐにでも会いたい'] },
+  { key: 'dateCost', label: 'デート費用', type: 'select', options: ['ワリカン','多めに出す','相手に出してほしい','状況による'] },
+  { key: 'mbti', label: '16タイプ診断', type: 'select', options: ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'] },
+  { key: 'personality', label: '性格・タイプ', type: 'multiselect', options: ['真面目','誠実','優しい','明るい','おっとり','活発','寛容','気前がいい','決断力がある','思いやりがある','ロマンチスト','負けず嫌い'] },
+  { key: 'sociability', label: '社交性', type: 'select', options: ['すぐ打ち解ける','徐々に仲良くなる','人見知り'] },
+  { key: 'roommate', label: '同居人', type: 'select', options: ['一人暮らし','家族と同居','ルームシェア','その他'] },
+  { key: 'pet', label: '飼っているペット', type: 'multiselect', options: ['なし','犬','猫','鳥','魚','うさぎ','ハムスター','爬虫類','その他'] },
+  { key: 'holiday', label: '休日', type: 'select', options: ['土日','日曜のみ','月火','水木','不定休','その他'] },
+  { key: 'alcohol', label: 'お酒', type: 'select', options: ['飲まない','ときどき飲む','よく飲む','毎日飲む'] },
+  { key: 'hobbies', label: '好きなこと・趣味', type: 'multiselect', options: ['スポーツ','映画・ドラマ','音楽','読書','旅行','グルメ','カフェ巡り','アウトドア','ゲーム','料理','写真','アート','ファッション','ヨガ・ジム','その他'] },
+] as const
 
-function ProfileRow({ label, value, set, chevron }: { label: string; value: string; set: boolean; chevron?: boolean }) {
+type AnyField = typeof BASIC_FIELDS[number] | typeof DETAIL_FIELDS[number]
+
+const INITIAL_VALUES: Record<string, string | string[]> = {
+  height: '173', bodyType: '普通', bloodType: '', location: '滋賀', birthplace: '',
+  jobType: 'IT・エンジニア', education: '大学卒', income: '400〜600万円未満', smoking: '吸わない',
+  nickname: '', siblings: '長男', language: ['日本語'], school: '', jobName: '',
+  marriage: '独身（未婚）', children: 'なし', marriageIntent: '2〜3年のうちに',
+  wantChildren: '子供は欲しい', housework: '積極的に参加したい', meetingHope: '気が合えば会いたい',
+  dateCost: '', mbti: '', personality: ['誠実', '優しい'], sociability: '徐々に仲良くなる',
+  roommate: '一人暮らし', pet: [], holiday: '土日', alcohol: 'ときどき飲む', hobbies: [],
+}
+
+// ── Helper ──────────────────────────────────────────────────────
+
+function displayValue(key: string, val: string | string[]): { text: string; isSet: boolean } {
+  if (Array.isArray(val)) {
+    if (val.length === 0) return { text: '設定する', isSet: false }
+    return { text: val.join(', '), isSet: true }
+  }
+  if (!val) return { text: key === 'nickname' || key === 'school' || key === 'jobName' ? '入力する' : '選択する', isSet: false }
+  if (key === 'height') return { text: `${val}cm`, isSet: true }
+  return { text: val, isSet: true }
+}
+
+// ── Bottom Sheet Picker ─────────────────────────────────────────
+
+function PickerSheet({
+  field, value, onClose, onSave,
+}: {
+  field: AnyField
+  value: string | string[]
+  onClose: () => void
+  onSave: (val: string | string[]) => void
+}) {
+  const [draft, setDraft] = useState<string | string[]>(value)
+
+  const toggleMulti = (opt: string) => {
+    const arr = Array.isArray(draft) ? draft : []
+    setDraft(arr.includes(opt) ? arr.filter(x => x !== opt) : [...arr, opt])
+  }
+
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 transition">
-      <span className="text-sm text-gray-700">{label}</span>
-      <div className="flex items-center gap-1">
-        <span className="text-sm font-medium" style={{ color: set ? '#7E2841' : '#DC2626' }}>{value}</span>
-        {chevron && <ChevronRight className="w-4 h-4 text-gray-300" />}
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
+      <div className="bg-white rounded-t-3xl max-h-[75vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <button onClick={onClose} className="text-gray-400"><X className="w-5 h-5" /></button>
+          <p className="font-bold text-gray-900 text-base">{field.label}</p>
+          <button onClick={() => { onSave(draft); onClose() }} className="font-bold text-sm" style={{ color: '#7E2841' }}>完了</button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-4 py-3">
+          {field.type === 'text' && (
+            <input
+              autoFocus
+              className="w-full border rounded-xl px-4 py-3 text-sm focus:outline-none mt-2"
+              style={{ borderColor: '#7E2841' }}
+              placeholder={'placeholder' in field ? field.placeholder : ''}
+              value={typeof draft === 'string' ? draft : ''}
+              onChange={e => setDraft(e.target.value)}
+            />
+          )}
+          {field.type === 'number' && (
+            <div className="space-y-1 py-2">
+              {Array.from({ length: (field as any).max - (field as any).min + 1 }, (_, i) => String((field as any).min + i)).map(opt => (
+                <button key={opt} onClick={() => setDraft(opt)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition"
+                  style={{ background: draft === opt ? '#F5E6EA' : 'transparent' }}>
+                  <span className="text-sm">{opt}cm</span>
+                  {draft === opt && <Check className="w-4 h-4" style={{ color: '#7E2841' }} />}
+                </button>
+              ))}
+            </div>
+          )}
+          {(field.type === 'select' || field.type === 'multiselect') && 'options' in field && (
+            <div className="space-y-1 py-2">
+              {field.options.map(opt => {
+                const selected = field.type === 'multiselect' ? (Array.isArray(draft) && draft.includes(opt)) : draft === opt
+                return (
+                  <button key={opt} onClick={() => field.type === 'multiselect' ? toggleMulti(opt) : setDraft(opt)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition"
+                    style={{ background: selected ? '#F5E6EA' : 'transparent' }}>
+                    <span className="text-sm text-gray-800">{opt}</span>
+                    {selected && <Check className="w-4 h-4" style={{ color: '#7E2841' }} />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// ── Profile Row ─────────────────────────────────────────────────
+
+function ProfileRow({ field, value, onTap }: { field: AnyField; value: string | string[]; onTap: () => void }) {
+  const { text, isSet } = displayValue(field.key, value)
+  const hasChevron = field.type !== 'select' || field.key === 'location' || field.key === 'birthplace' || field.key === 'language' || field.key === 'personality' || field.key === 'pet' || field.key === 'hobbies'
   return (
-    <div className="bg-white mb-3">
-      <div className="px-4 py-3 border-b border-gray-100">
-        <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+    <button onClick={onTap} className="w-full flex items-center justify-between py-3 border-b border-gray-100 last:border-0 active:bg-gray-50 transition text-left">
+      <span className="text-sm text-gray-700">{field.label}</span>
+      <div className="flex items-center gap-1 max-w-[55%]">
+        <span className="text-sm font-medium text-right truncate" style={{ color: isSet ? '#7E2841' : '#DC2626' }}>{text}</span>
+        <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
       </div>
-      <div className="px-4">{children}</div>
-    </div>
+    </button>
   )
 }
+
+// ── Main Component ──────────────────────────────────────────────
 
 export default function DemoProfilePage() {
+  const [tab, setTab] = useState<'basic' | 'detail'>('basic')
+  const [values, setValues] = useState<Record<string, string | string[]>>(INITIAL_VALUES)
+  const [activeField, setActiveField] = useState<AnyField | null>(null)
+  const [photo, setPhoto] = useState<string | null>(null)
   const [mode, setMode] = useState<'view' | 'edit'>('view')
-  const [bio, setBio] = useState('はじめまして！\nプロフィールを見ていただき、ありがとうございます😊\n\n普段はエンジニアとして働いています。\n土日休みの仕事です。\n\n休みの日は、散歩や食べ歩きに行くことが多いです！\n\nさっぱりとした性格で物惜しみはしません。\nよろしくお願いします！')
+  const [bio, setBio] = useState('はじめまして！\nプロフィールを見ていただき、ありがとうございます😊\n\n普段はエンジニアとして働いています。\n土日休みの仕事です。\n\n休みの日は、散歩や食べ歩きに行くことが多いです！\n\nよろしくお願いします！')
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  const completedBasic = BASIC_ITEMS.filter(i => i.set).length
-  const completedDetail = DETAIL_ITEMS.filter(i => i.set).length
-  const totalItems = BASIC_ITEMS.length + DETAIL_ITEMS.length
-  const completedItems = completedBasic + completedDetail
-  const completionPct = Math.round((completedItems / totalItems) * 100)
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) setPhoto(URL.createObjectURL(file))
+  }
+
+  const handleSave = (key: string, val: string | string[]) => {
+    setValues(prev => ({ ...prev, [key]: val }))
+  }
+
+  const completedBasic = BASIC_FIELDS.filter(f => {
+    const v = values[f.key]; return Array.isArray(v) ? v.length > 0 : !!v
+  }).length
+  const completedDetail = DETAIL_FIELDS.filter(f => {
+    const v = values[f.key]; return Array.isArray(v) ? v.length > 0 : !!v
+  }).length
+  const totalCompleted = completedBasic + completedDetail
+  const totalFields = BASIC_FIELDS.length + DETAIL_FIELDS.length
+  const pct = Math.round((totalCompleted / totalFields) * 100)
+
+  const fields = tab === 'basic' ? BASIC_FIELDS : DETAIL_FIELDS
 
   if (mode === 'edit') {
     return (
       <div className="min-h-screen" style={{ background: '#F8F5F6' }}>
-        {/* Edit header */}
+        {/* Header */}
         <div className="bg-white px-4 pt-10 pb-3 sticky top-0 z-20 shadow-sm flex items-center justify-between">
-          <button onClick={() => setMode('view')} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
-            <span className="text-gray-600 text-lg">×</span>
+          <button onClick={() => setMode('view')} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+            <X className="w-5 h-5 text-gray-600" />
           </button>
           <h1 className="text-base font-bold text-gray-900">プロフィール編集</h1>
           <button onClick={() => setMode('view')} className="text-sm font-medium" style={{ color: '#7E2841' }}>
@@ -92,115 +198,133 @@ export default function DemoProfilePage() {
           </button>
         </div>
 
-        {/* Photo */}
-        <div className="bg-white py-5 mb-3 flex flex-col items-center gap-2">
-          <div className="relative">
-            <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-5xl shadow-md`}>
-              {DEMO_USER.emoji}
-            </div>
-            <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center shadow" style={{ background: '#7E2841' }}>
-              <Camera className="w-3.5 h-3.5 text-white" />
-            </button>
+        {/* Photo upload */}
+        <div className="bg-white py-5 mb-3">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h3 className="font-bold text-sm text-gray-800">プロフィール写真</h3>
+            <span className="text-xs" style={{ color: '#7E2841' }}>すべて見る</span>
           </div>
-          <p className="text-xs text-gray-400">写真を変更</p>
+          <div className="px-4 flex gap-2">
+            {/* Main photo */}
+            <button onClick={() => fileRef.current?.click()} className="relative rounded-2xl overflow-hidden flex-shrink-0" style={{ width: '52%', aspectRatio: '3/4', background: '#EFF6FF' }}>
+              {photo
+                ? <img src={photo} alt="profile" className="w-full h-full object-cover" />
+                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400">
+                    <Camera className="w-8 h-8" />
+                    <span className="text-xs">メイン写真</span>
+                  </div>
+              }
+              <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center shadow">
+                <Camera className="w-3.5 h-3.5 text-gray-600" />
+              </div>
+            </button>
+            {/* Sub photos */}
+            <div className="flex flex-col gap-2 flex-1">
+              {['笑顔', '全身'].map(label => (
+                <div key={label} className="rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 flex-1" style={{ minHeight: 80 }}>
+                  <span className="text-xs text-gray-400">{label}</span>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Sub photos row */}
+          <div className="px-4 mt-2 grid grid-cols-3 gap-2">
+            {['趣味', '食べ物', '旅行'].map(label => (
+              <div key={label} className="rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 py-4">
+                <span className="text-xs text-gray-400">{label}</span>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
+              </div>
+            ))}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
         </div>
 
-        {/* 自己紹介文 */}
-        <Section title="自己紹介文">
+        {/* Self intro */}
+        <div className="bg-white px-4 py-4 mb-3">
+          <h3 className="text-sm font-bold text-gray-800 mb-2">自己紹介文</h3>
           <textarea
-            value={bio}
-            onChange={e => setBio(e.target.value)}
-            rows={7}
-            className="w-full text-sm text-gray-800 leading-relaxed focus:outline-none resize-none py-3"
-            placeholder="自己紹介文を入力してください"
+            value={bio} onChange={e => setBio(e.target.value)} rows={6}
+            className="w-full text-sm text-gray-800 leading-relaxed focus:outline-none resize-none"
             style={{ caretColor: '#7E2841' }}
+            placeholder="自己紹介文を入力してください"
           />
-        </Section>
+        </div>
 
-        {/* 基本情報 */}
-        <Section title="基本プロフ">
-          {BASIC_ITEMS.map(item => <ProfileRow key={item.label} {...item} />)}
-        </Section>
-
-        {/* 詳細プロフィール */}
-        <Section title="詳細プロフィール">
-          {DETAIL_ITEMS.map(item => <ProfileRow key={item.label} {...item} />)}
-        </Section>
+        {/* Tabs */}
+        <div className="bg-white mb-3">
+          <div className="flex border-b border-gray-100">
+            {(['basic', 'detail'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="flex-1 py-3 text-sm font-bold transition"
+                style={{ color: tab === t ? '#7E2841' : '#9CA3AF', borderBottom: tab === t ? '2px solid #7E2841' : '2px solid transparent' }}>
+                {t === 'basic' ? `基本プロフ（${completedBasic}/${BASIC_FIELDS.length}）` : `詳細プロフィール（${completedDetail}/${DETAIL_FIELDS.length}）`}
+              </button>
+            ))}
+          </div>
+          <div className="px-4">
+            {fields.map(f => (
+              <ProfileRow key={f.key} field={f} value={values[f.key] ?? ''} onTap={() => setActiveField(f)} />
+            ))}
+          </div>
+        </div>
 
         <div className="h-20" />
+
+        {/* Picker sheet */}
+        {activeField && (
+          <PickerSheet
+            field={activeField}
+            value={values[activeField.key] ?? (activeField.type === 'multiselect' ? [] : '')}
+            onClose={() => setActiveField(null)}
+            onSave={val => handleSave(activeField.key, val)}
+          />
+        )}
       </div>
     )
   }
 
-  // View mode
+  // ── View mode ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen" style={{ background: '#F8F5F6' }}>
-      {/* Header */}
       <div className="bg-white px-4 pt-10 pb-4 sticky top-0 z-20 shadow-sm flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">マイプロフィール</h1>
-        <button
-          onClick={() => setMode('edit')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition"
-          style={{ background: '#F5E6EA', color: '#7E2841' }}
-        >
+        <button onClick={() => setMode('edit')} className="px-3 py-1.5 rounded-full text-sm font-medium" style={{ background: '#F5E6EA', color: '#7E2841' }}>
           編集
         </button>
       </div>
 
-      {/* Profile hero */}
       <div className="bg-white px-4 py-6 mb-3">
         <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-4xl shadow-md`}>
-              {DEMO_USER.emoji}
-            </div>
-          </div>
+          <button onClick={() => { setMode('edit'); fileRef.current?.click() }} className="relative flex-shrink-0">
+            {photo
+              ? <img src={photo} alt="profile" className="w-20 h-20 rounded-full object-cover shadow-md" />
+              : <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-4xl shadow-md`}>{DEMO_USER.emoji}</div>
+            }
+          </button>
           <div className="flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <h2 className="text-xl font-bold text-gray-900">{DEMO_USER.name}</h2>
-              <CheckCircle className="w-4 h-4 text-blue-500" />
-            </div>
-            <p className="text-gray-500 text-sm">{DEMO_USER.age}歳 ・{DEMO_USER.location}</p>
-            <p className="text-gray-400 text-xs mt-0.5">{DEMO_USER.occupation}</p>
+            <h2 className="text-xl font-bold text-gray-900">{DEMO_USER.name}</h2>
+            <p className="text-gray-500 text-sm">{DEMO_USER.age}歳 ・{values.location || DEMO_USER.location}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{values.jobType || DEMO_USER.occupation}</p>
           </div>
         </div>
-        <div className="flex mt-5 divide-x divide-gray-100">
-          {STATS.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
-              <Icon className="w-4 h-4 text-gray-400" />
-              <span className="text-lg font-bold text-gray-900">{value}</span>
-              <span className="text-xs text-gray-400">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Profile completion */}
-      <div className="bg-white px-4 py-4 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-gray-700">プロフィール完成度</span>
-          <span className="text-sm font-bold" style={{ color: '#7E2841' }}>{completionPct}%</span>
+        {/* Completion bar */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-gray-500">プロフィール完成度</span>
+            <span className="text-xs font-bold" style={{ color: '#7E2841' }}>{pct}%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7E2841, #A03558)' }} />
+          </div>
         </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all" style={{ width: `${completionPct}%`, background: 'linear-gradient(90deg, #7E2841, #A03558)' }} />
-        </div>
-        <p className="text-xs text-gray-400 mt-1.5">プロフィールを充実させるといいね！が増えます</p>
       </div>
 
       {/* Bio */}
       <div className="bg-white px-4 py-4 mb-3">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">自己紹介</h3>
         <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{bio}</p>
-      </div>
-
-      {/* Interests */}
-      <div className="bg-white px-4 py-4 mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">趣味・興味</h3>
-        <div className="flex flex-wrap gap-2">
-          {DEMO_USER.interests.map(i => (
-            <span key={i} className="px-3 py-1.5 rounded-full text-sm font-medium" style={{ background: '#F5E6EA', color: '#7E2841' }}>{i}</span>
-          ))}
-        </div>
       </div>
 
       {/* Basic info summary */}
@@ -210,16 +334,20 @@ export default function DemoProfilePage() {
           <button onClick={() => setMode('edit')} className="text-xs" style={{ color: '#7E2841' }}>編集 ›</button>
         </div>
         <div className="divide-y divide-gray-50">
-          {BASIC_ITEMS.map(item => (
-            <div key={item.label} className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-gray-500">{item.label}</span>
-              <span className="text-sm font-medium" style={{ color: item.set ? '#374151' : '#9CA3AF' }}>{item.value}</span>
-            </div>
-          ))}
+          {BASIC_FIELDS.map(f => {
+            const { text, isSet } = displayValue(f.key, values[f.key] ?? '')
+            return (
+              <div key={f.key} className="flex items-center justify-between py-2.5">
+                <span className="text-sm text-gray-500">{f.label}</span>
+                <span className="text-sm font-medium" style={{ color: isSet ? '#374151' : '#9CA3AF' }}>{text}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
       <div className="h-4" />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
     </div>
   )
 }
