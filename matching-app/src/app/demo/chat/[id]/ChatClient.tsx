@@ -103,7 +103,7 @@ export default function ChatClient({ matchId }: { matchId: string }) {
   const grouped = groupByDate(messages)
 
   return (
-    <div className="fixed inset-0 flex flex-col z-40" style={{ background: '#F8F5F6' }}>
+    <div className="fixed inset-0 flex flex-col z-[100]" style={{ background: '#F8F5F6' }}>
       {/* Header */}
       <div className="bg-white px-4 pt-10 pb-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
         <Link href="/demo/chat" className="p-2 hover:bg-gray-100 rounded-full transition">
