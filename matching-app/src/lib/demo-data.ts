@@ -18,6 +18,8 @@ export interface DemoProfile {
   height: number | null
   bodyType: string
   smoking: string
+  drinking?: string
+  holiday?: string
   created_at: string
   updated_at: string
   // visual placeholders (demo)
@@ -76,6 +78,8 @@ export const DEMO_USER: DemoProfile = {
   height: 175,
   bodyType: '普通',
   smoking: '吸わない',
+  drinking: 'ときどき飲む',
+  holiday: '土日',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
   emoji: '😊',
@@ -200,7 +204,7 @@ export const MATCHED_PROFILES: DemoProfile[] = [
     avatar_url: null, photos: [],
     interests: ['アート', 'ペット', 'カフェ巡り', '旅行', '写真'],
     location: '滋賀県', occupation: 'フローリスト(修業中)', height: 158,
-    bodyType: '普通', smoking: '吸わない',
+    bodyType: '普通', smoking: '吸わない', drinking: '飲まない', holiday: '土日',
     created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
     emoji: '🌺', color: 'from-rose-300 to-pink-400',
     likeCount: 312, photoCount: 3, matchPercent: 88, isOnline: false, isVerified: true,
@@ -212,7 +216,7 @@ export const MATCHED_PROFILES: DemoProfile[] = [
     avatar_url: null, photos: [],
     interests: ['カフェ巡り', '読書', '音楽', '料理', 'DIY'],
     location: '滋賀県', occupation: 'バリスタ', height: 163,
-    bodyType: 'やや細め', smoking: '吸わない',
+    bodyType: 'やや細め', smoking: '吸わない', drinking: 'ときどき飲む', holiday: '土日',
     created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
     emoji: '☕', color: 'from-amber-300 to-orange-400',
     likeCount: 224, photoCount: 2, matchPercent: 82, isOnline: true, isVerified: true,
@@ -224,7 +228,7 @@ export const MATCHED_PROFILES: DemoProfile[] = [
     avatar_url: null, photos: [],
     interests: ['ショッピング', '映画', 'グルメ', 'カフェ', 'ドライブ'],
     location: '大阪府', occupation: '会社員', height: 162,
-    bodyType: '普通', smoking: '吸わない',
+    bodyType: '普通', smoking: '吸わない', drinking: 'ときどき飲む', holiday: '土日',
     created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
     emoji: '🌙', color: 'from-indigo-300 to-blue-400',
     likeCount: 445, photoCount: 4, matchPercent: 75, isOnline: false, isVerified: false,

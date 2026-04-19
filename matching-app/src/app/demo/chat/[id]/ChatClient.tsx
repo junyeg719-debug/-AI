@@ -16,13 +16,17 @@ import {
 
 const FIRST_MSG_TEMPLATE = 'はじめまして！プロフィール拝見して、共通点がありそうだと思っていいねしました😊 ぜひお話しできたら嬉しいです。よろしくお願いします！'
 
-function getCommonTags(partnerInterests: string[], partnerLocation: string, partnerSmoking: string): string[] {
-  const tags: string[] = []
-  const common = DEMO_USER.interests.filter(i => partnerInterests.includes(i))
-  common.forEach(i => tags.push(i))
-  if (partnerLocation === DEMO_USER.location) tags.push('同じ居住地')
-  if (partnerSmoking === DEMO_USER.smoking) tags.push('どちらも非喫煙')
-  return tags.slice(0, 6)
+type CommonTag = { icon: string; label: string }
+
+function getCommonTags(partner: { interests: string[]; location: string; smoking: string; drinking?: string; holiday?: string }): CommonTag[] {
+  const tags: CommonTag[] = []
+  if (partner.location === DEMO_USER.location) tags.push({ icon: '📍', label: partner.location.replace('県', '').replace('府', '').replace('都', '') })
+  if (partner.holiday && partner.holiday === DEMO_USER.holiday) tags.push({ icon: '🗓', label: partner.holiday })
+  if (partner.drinking && partner.drinking === DEMO_USER.drinking) tags.push({ icon: '🍺', label: partner.drinking })
+  if (partner.smoking === DEMO_USER.smoking) tags.push({ icon: '🚬', label: partner.smoking })
+  const commonInterests = DEMO_USER.interests.filter(i => partner.interests.includes(i))
+  commonInterests.slice(0, 2).forEach(i => tags.push({ icon: '✨', label: i }))
+  return tags.slice(0, 5)
 }
 
 function getAiSuggestions(partnerName: string, partnerInterests: string[], lastPartnerMsg: string): string[] {
@@ -66,13 +70,12 @@ export default function ChatClient({ matchId }: { matchId: string }) {
   const [input, setInput] = useState(isFirstMessage ? FIRST_MSG_TEMPLATE : '')
   const [partnerTyping, setPartnerTyping] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
-  const [showPrivacyNotice, setShowPrivacyNotice] = useState(isFirstMessage)
   const [hasSentFirst, setHasSentFirst] = useState(!isFirstMessage)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const lastPartnerMsg = messages.filter((m) => m.sender_id !== DEMO_USER_ID).at(-1)?.content ?? ''
   const aiSuggestions = partner ? getAiSuggestions(partner.name, partner.interests, lastPartnerMsg) : []
-  const commonTags = partner ? getCommonTags(partner.interests, partner.location, partner.smoking) : []
+  const commonTags = partner ? getCommonTags(partner) : []
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -87,7 +90,6 @@ export default function ChatClient({ matchId }: { matchId: string }) {
     if (!text) return
     setInput('')
     setShowAiPanel(false)
-    setShowPrivacyNotice(false)
     setHasSentFirst(true)
     setMessages((prev) => [...prev, { id: `msg-${Date.now()}`, match_id: matchId, sender_id: DEMO_USER_ID, content: text, is_read: false, created_at: new Date().toISOString() }])
     setPartnerTyping(true)
@@ -148,14 +150,22 @@ export default function ChatClient({ matchId }: { matchId: string }) {
 
         {/* Common talking points */}
         {commonTags.length > 0 && (
-          <div className="mx-3 mt-3 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <p className="text-xs font-bold text-gray-500 mb-2.5">💬 話題になりそうな共通点</p>
-            <div className="flex flex-wrap gap-1.5">
-              {commonTags.map((tag) => (
-                <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#F5E6EA', color: '#7E2841' }}>
-                  {tag}
-                </span>
-              ))}
+          <div className="mx-3 mt-3">
+            <div className="flex justify-center mb-1">
+              <span className="text-xs text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">話題になりそうな共通点</span>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex gap-2 mb-3">
+                <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${partner.color} flex items-center justify-center text-2xl`}>{partner.emoji}</div>
+                <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-2xl">😊</div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {commonTags.map((tag) => (
+                  <span key={tag.label} className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 flex items-center gap-1">
+                    <span>{tag.icon}</span>{tag.label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -227,14 +237,11 @@ export default function ChatClient({ matchId }: { matchId: string }) {
       </div>
 
       {/* Privacy notice */}
-      {showPrivacyNotice && !hasSentFirst && (
-        <div className="mx-3 mb-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-start gap-2">
-          <p className="text-xs text-amber-700 flex-1 leading-relaxed">
-            初めてのメッセージは相手に通知されます。不快なメッセージや勧誘・詐欺行為は禁止されています。
+      {!hasSentFirst && (
+        <div className="px-4 pb-2">
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            1通目のメッセージであなたを特定できる個人情報は送信できません。健全なサービスを運営する目的で運営者がメッセージの内容を確認・削除する場合があります。また、1年以上経過したメッセージは閲覧できません。これに同意した上で送信して下さい。
           </p>
-          <button onClick={() => setShowPrivacyNotice(false)} className="flex-shrink-0 mt-0.5">
-            <X className="w-4 h-4 text-amber-400" />
-          </button>
         </div>
       )}
 
