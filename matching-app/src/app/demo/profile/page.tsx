@@ -137,7 +137,7 @@ export default function ProfileDashboard() {
           rel="noopener noreferrer"
           className="mt-3 flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white shadow-sm active:opacity-80 transition"
         >
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f9ce34, #f5a623)' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/>
               <line x1="2" y1="12" x2="22" y2="12"/>
