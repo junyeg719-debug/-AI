@@ -160,18 +160,33 @@ export default function DemoProfilePage() {
   const [tab, setTab] = useState<'basic' | 'detail'>('basic')
   const [values, setValues] = useState<Record<string, string | string[]>>(INITIAL_VALUES)
   const [activeField, setActiveField] = useState<AnyField | null>(null)
-  const [photo, setPhoto] = useState<string | null>(null)
+  const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null))
+  const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0)
   const [mode, setMode] = useState<'view' | 'edit'>('view')
+  const [saved, setSaved] = useState(false)
   const [bio, setBio] = useState('はじめまして！\nプロフィールを見ていただき、ありがとうございます😊\n\n普段はエンジニアとして働いています。\n土日休みの仕事です。\n\n休みの日は、散歩や食べ歩きに行くことが多いです！\n\nよろしくお願いします！')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) setPhoto(URL.createObjectURL(file))
+  const openPhotoPicker = (idx: number) => {
+    setActivePhotoIdx(idx)
+    fileRef.current?.click()
   }
 
-  const handleSave = (key: string, val: string | string[]) => {
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setPhotos(prev => prev.map((p, i) => i === activePhotoIdx ? url : p))
+    e.target.value = ''
+  }
+
+  const handleFieldSave = (key: string, val: string | string[]) => {
     setValues(prev => ({ ...prev, [key]: val }))
+  }
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => { setSaved(false); setMode('view') }, 1500)
   }
 
   const completedBasic = BASIC_FIELDS.filter(f => {
@@ -185,6 +200,8 @@ export default function DemoProfilePage() {
   const pct = Math.round((totalCompleted / totalFields) * 100)
 
   const fields = tab === 'basic' ? BASIC_FIELDS : DETAIL_FIELDS
+
+  const SUB_LABELS = ['笑顔', '全身', '趣味', '食べ物', '旅行']
 
   if (mode === 'edit') {
     return (
@@ -204,13 +221,13 @@ export default function DemoProfilePage() {
         <div className="bg-white py-5 mb-3">
           <div className="flex items-center justify-between px-4 mb-3">
             <h3 className="font-bold text-sm text-gray-800">プロフィール写真</h3>
-            <span className="text-xs" style={{ color: '#7E2841' }}>すべて見る</span>
+            <span className="text-xs text-gray-400">{photos.filter(Boolean).length}/6枚</span>
           </div>
           <div className="px-4 flex gap-2">
-            {/* Main photo */}
-            <button onClick={() => fileRef.current?.click()} className="relative rounded-2xl overflow-hidden flex-shrink-0" style={{ width: '52%', aspectRatio: '3/4', background: '#EFF6FF' }}>
-              {photo
-                ? <img src={photo} alt="profile" className="w-full h-full object-cover" />
+            {/* Main photo (index 0) */}
+            <button onClick={() => openPhotoPicker(0)} className="relative rounded-2xl overflow-hidden flex-shrink-0" style={{ width: '52%', aspectRatio: '3/4', background: '#EFF6FF' }}>
+              {photos[0]
+                ? <img src={photos[0]} alt="main" className="w-full h-full object-cover" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400">
                     <Camera className="w-8 h-8" />
                     <span className="text-xs">メイン写真</span>
@@ -220,23 +237,47 @@ export default function DemoProfilePage() {
                 <Camera className="w-3.5 h-3.5 text-gray-600" />
               </div>
             </button>
-            {/* Sub photos */}
+            {/* Sub photos index 1-2 */}
             <div className="flex flex-col gap-2 flex-1">
-              {['笑顔', '全身'].map(label => (
-                <div key={label} className="rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 flex-1" style={{ minHeight: 80 }}>
-                  <span className="text-xs text-gray-400">{label}</span>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
-                </div>
+              {[1, 2].map(idx => (
+                <button key={idx} onClick={() => openPhotoPicker(idx)}
+                  className="rounded-2xl border-2 border-dashed overflow-hidden flex-1 relative"
+                  style={{ minHeight: 80, borderColor: photos[idx] ? 'transparent' : '#E5E7EB', background: photos[idx] ? 'transparent' : 'white' }}>
+                  {photos[idx]
+                    ? <img src={photos[idx]!} alt="" className="w-full h-full object-cover absolute inset-0" />
+                    : <div className="flex flex-col items-center justify-center gap-1 h-full py-3">
+                        <span className="text-xs text-gray-400">{SUB_LABELS[idx - 1]}</span>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
+                      </div>
+                  }
+                  {photos[idx] && (
+                    <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-white/80 flex items-center justify-center shadow">
+                      <Camera className="w-3 h-3 text-gray-600" />
+                    </div>
+                  )}
+                </button>
               ))}
             </div>
           </div>
-          {/* Sub photos row */}
+          {/* Sub photos index 3-5 */}
           <div className="px-4 mt-2 grid grid-cols-3 gap-2">
-            {['趣味', '食べ物', '旅行'].map(label => (
-              <div key={label} className="rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 py-4">
-                <span className="text-xs text-gray-400">{label}</span>
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
-              </div>
+            {[3, 4, 5].map(idx => (
+              <button key={idx} onClick={() => openPhotoPicker(idx)}
+                className="rounded-2xl border-2 border-dashed overflow-hidden relative"
+                style={{ aspectRatio: '1', borderColor: photos[idx] ? 'transparent' : '#E5E7EB', background: photos[idx] ? 'transparent' : 'white' }}>
+                {photos[idx]
+                  ? <img src={photos[idx]!} alt="" className="w-full h-full object-cover absolute inset-0" />
+                  : <div className="flex flex-col items-center justify-center gap-1 h-full py-3">
+                      <span className="text-xs text-gray-400">{SUB_LABELS[idx - 1]}</span>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-lg font-bold" style={{ background: '#7E2841' }}>+</div>
+                    </div>
+                }
+                {photos[idx] && (
+                  <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center shadow">
+                    <Camera className="w-2.5 h-2.5 text-gray-600" />
+                  </div>
+                )}
+              </button>
             ))}
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
@@ -271,7 +312,21 @@ export default function DemoProfilePage() {
           </div>
         </div>
 
-        <div className="h-20" />
+        {/* Save button */}
+        <div className="px-4 pb-8">
+          {saved && (
+            <div className="text-center text-sm font-medium py-2 mb-2 rounded-xl" style={{ background: '#F0FDF4', color: '#16A34A' }}>
+              ✓ 保存しました
+            </div>
+          )}
+          <button onClick={handleSave}
+            className="w-full py-4 text-white font-bold rounded-2xl shadow-lg text-base active:scale-[0.98] transition"
+            style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}>
+            保存する
+          </button>
+        </div>
+
+        <div className="h-4" />
 
         {/* Picker sheet */}
         {activeField && (
@@ -279,7 +334,7 @@ export default function DemoProfilePage() {
             field={activeField}
             value={values[activeField.key] ?? (activeField.type === 'multiselect' ? [] : '')}
             onClose={() => setActiveField(null)}
-            onSave={val => handleSave(activeField.key, val)}
+            onSave={val => handleFieldSave(activeField.key, val)}
           />
         )}
       </div>
@@ -298,9 +353,9 @@ export default function DemoProfilePage() {
 
       <div className="bg-white px-4 py-6 mb-3">
         <div className="flex items-center gap-4">
-          <button onClick={() => { setMode('edit'); fileRef.current?.click() }} className="relative flex-shrink-0">
-            {photo
-              ? <img src={photo} alt="profile" className="w-20 h-20 rounded-full object-cover shadow-md" />
+          <button onClick={() => setMode('edit')} className="relative flex-shrink-0">
+            {photos[0]
+              ? <img src={photos[0]} alt="profile" className="w-20 h-20 rounded-full object-cover shadow-md" />
               : <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-4xl shadow-md`}>{DEMO_USER.emoji}</div>
             }
           </button>
