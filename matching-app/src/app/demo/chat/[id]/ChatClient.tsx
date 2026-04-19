@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Send, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, X, Bell, Phone, MoreHorizontal, Check } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -10,8 +10,20 @@ import {
   MATCHED_PROFILES,
   DEMO_MESSAGES,
   DEMO_USER_ID,
+  DEMO_USER,
   type DemoMessage,
 } from '@/lib/demo-data'
+
+const FIRST_MSG_TEMPLATE = 'はじめまして！プロフィール拝見して、共通点がありそうだと思っていいねしました😊 ぜひお話しできたら嬉しいです。よろしくお願いします！'
+
+function getCommonTags(partnerInterests: string[], partnerLocation: string, partnerSmoking: string): string[] {
+  const tags: string[] = []
+  const common = DEMO_USER.interests.filter(i => partnerInterests.includes(i))
+  common.forEach(i => tags.push(i))
+  if (partnerLocation === DEMO_USER.location) tags.push('同じ居住地')
+  if (partnerSmoking === DEMO_USER.smoking) tags.push('どちらも非喫煙')
+  return tags.slice(0, 6)
+}
 
 function getAiSuggestions(partnerName: string, partnerInterests: string[], lastPartnerMsg: string): string[] {
   const interest = partnerInterests[0] ?? '趣味'
@@ -49,14 +61,18 @@ export default function ChatClient({ matchId }: { matchId: string }) {
   const partnerId = match ? (match.user1_id === DEMO_USER_ID ? match.user2_id : match.user1_id) : null
   const partner = MATCHED_PROFILES.find((p) => p.user_id === partnerId)
 
+  const isFirstMessage = (DEMO_MESSAGES[matchId] ?? []).length === 0
   const [messages, setMessages] = useState<DemoMessage[]>(DEMO_MESSAGES[matchId] ?? [])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(isFirstMessage ? FIRST_MSG_TEMPLATE : '')
   const [partnerTyping, setPartnerTyping] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [showPrivacyNotice, setShowPrivacyNotice] = useState(isFirstMessage)
+  const [hasSentFirst, setHasSentFirst] = useState(!isFirstMessage)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const lastPartnerMsg = messages.filter((m) => m.sender_id !== DEMO_USER_ID).at(-1)?.content ?? ''
   const aiSuggestions = partner ? getAiSuggestions(partner.name, partner.interests, lastPartnerMsg) : []
+  const commonTags = partner ? getCommonTags(partner.interests, partner.location, partner.smoking) : []
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -71,6 +87,8 @@ export default function ChatClient({ matchId }: { matchId: string }) {
     if (!text) return
     setInput('')
     setShowAiPanel(false)
+    setShowPrivacyNotice(false)
+    setHasSentFirst(true)
     setMessages((prev) => [...prev, { id: `msg-${Date.now()}`, match_id: matchId, sender_id: DEMO_USER_ID, content: text, is_read: false, created_at: new Date().toISOString() }])
     setPartnerTyping(true)
     const replies = ['そうなんですね！✨', 'それは楽しそうですね😊', 'ぜひ聞かせてください！', 'なるほど、私もそう思います！', `${partner.interests[0]}もいいですよね〜`, '今度一緒に行きませんか？']
@@ -84,6 +102,7 @@ export default function ChatClient({ matchId }: { matchId: string }) {
 
   return (
     <div className="flex flex-col h-screen" style={{ background: '#F8F5F6' }}>
+      {/* Header */}
       <div className="bg-white px-4 pt-10 pb-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
         <Link href="/demo/chat" className="p-2 hover:bg-gray-100 rounded-full transition">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -92,66 +111,155 @@ export default function ChatClient({ matchId }: { matchId: string }) {
           {partner.emoji}
           {partner.isOnline && <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />}
         </div>
-        <div className="flex-1">
-          <p className="font-semibold text-gray-900">{partner.name}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{partner.name}</p>
           <p className="text-xs text-gray-400">{partner.age}歳 ・{partner.location}</p>
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button className="p-2 hover:bg-gray-100 rounded-full transition">
+            <Bell className="w-5 h-5 text-gray-500" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition">
+            <Phone className="w-5 h-5 text-gray-500" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition">
+            <MoreHorizontal className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto">
+        {/* Photo strip */}
+        <div className="bg-white px-4 py-3 border-b border-gray-100">
+          <div className="flex gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                {i === 0 ? (
+                  <div className={`w-full h-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-2xl`}>{partner.emoji}</div>
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-300 text-[10px]">写真</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Common talking points */}
+        {commonTags.length > 0 && (
+          <div className="mx-3 mt-3 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <p className="text-xs font-bold text-gray-500 mb-2.5">💬 話題になりそうな共通点</p>
+            <div className="flex flex-wrap gap-1.5">
+              {commonTags.map((tag) => (
+                <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#F5E6EA', color: '#7E2841' }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Match intro (no messages yet) */}
         {messages.length === 0 && (
-          <div className="flex flex-col items-center py-8 gap-3">
+          <div className="flex flex-col items-center py-6 gap-2 px-6">
             <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-4xl shadow-md`}>{partner.emoji}</div>
             <p className="font-bold text-gray-800 text-lg">{partner.name}さんとマッチ！</p>
-            <div className="flex flex-wrap gap-1.5 justify-center px-4">
-              {partner.interests.slice(0, 4).map((i) => (<span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#F5E6EA', color: '#7E2841' }}>{i}</span>))}
-            </div>
-            <p className="text-gray-400 text-sm text-center px-6">{partner.bio}</p>
+            <p className="text-gray-400 text-sm text-center leading-relaxed">{partner.bio}</p>
           </div>
         )}
-        {Object.entries(grouped).map(([date, msgs]) => (
-          <div key={date}>
-            <div className="flex items-center gap-2 my-3">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 font-medium px-2">{date}</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-            <div className="space-y-2">
-              {msgs.map((msg) => {
-                const isMine = msg.sender_id === DEMO_USER_ID
-                return (
-                  <div key={msg.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                    {!isMine && <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center flex-shrink-0 text-sm`}>{partner.emoji}</div>}
-                    <div className={`max-w-[70%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine ? 'rounded-br-sm text-white' : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'}`} style={isMine ? { background: 'linear-gradient(135deg, #7E2841, #A03558)' } : undefined}>
-                        {msg.content}
+
+        {/* Message list */}
+        <div className="px-4 py-4 space-y-4">
+          {Object.entries(grouped).map(([date, msgs]) => (
+            <div key={date}>
+              <div className="flex items-center gap-2 my-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400 font-medium px-2">{date}</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <div className="space-y-2">
+                {msgs.map((msg) => {
+                  const isMine = msg.sender_id === DEMO_USER_ID
+                  return (
+                    <div key={msg.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {!isMine && (
+                        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center flex-shrink-0 text-sm`}>{partner.emoji}</div>
+                      )}
+                      <div className={`max-w-[70%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine ? 'rounded-br-sm text-white' : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'}`}
+                          style={isMine ? { background: 'linear-gradient(135deg, #7E2841, #A03558)' } : undefined}
+                        >
+                          {msg.content}
+                        </div>
+                        <div className={`flex items-center gap-1 px-1 ${isMine ? 'flex-row-reverse' : ''}`}>
+                          <span className="text-xs text-gray-400">{format(new Date(msg.created_at), 'HH:mm')}</span>
+                          {isMine && msg.is_read && (
+                            <>
+                              <Check className="w-3 h-3" style={{ color: '#7E2841' }} />
+                              <span className="text-[10px]" style={{ color: '#7E2841' }}>既読</span>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs text-gray-400 px-1">
-                        {format(new Date(msg.created_at), 'HH:mm')}
-                        {isMine && <span className="ml-1" style={{ color: '#7E2841' }}>既読</span>}
-                      </span>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-        {partnerTyping && (
-          <div className="flex items-end gap-2">
-            <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-sm`}>{partner.emoji}</div>
-            <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-              <div className="flex gap-1 items-center">
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  )
+                })}
               </div>
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          ))}
+
+          {partnerTyping && (
+            <div className="flex items-end gap-2">
+              <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-sm`}>{partner.emoji}</div>
+              <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                <div className="flex gap-1 items-center">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
+      {/* Privacy notice */}
+      {showPrivacyNotice && !hasSentFirst && (
+        <div className="mx-3 mb-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-start gap-2">
+          <p className="text-xs text-amber-700 flex-1 leading-relaxed">
+            初めてのメッセージは相手に通知されます。不快なメッセージや勧誘・詐欺行為は禁止されています。
+          </p>
+          <button onClick={() => setShowPrivacyNotice(false)} className="flex-shrink-0 mt-0.5">
+            <X className="w-4 h-4 text-amber-400" />
+          </button>
+        </div>
+      )}
+
+      {/* Template suggestion bar (first message only) */}
+      {!hasSentFirst && (
+        <div className="bg-white border-t border-gray-100 px-3 py-2 flex items-center gap-2 overflow-x-auto">
+          <p className="text-xs text-gray-400 flex-shrink-0">テンプレ：</p>
+          {[
+            'よろしくお願いします！',
+            `${partner.interests[0]}が好きなんですね！`,
+            'プロフィール見て気になりました😊',
+          ].map((tpl) => (
+            <button
+              key={tpl}
+              onClick={() => setInput(tpl)}
+              className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition whitespace-nowrap"
+              style={{ borderColor: '#D4B0BB', color: '#7E2841', background: '#FEF9FA' }}
+            >
+              {tpl}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* AI suggestions panel */}
       {showAiPanel && (
         <div className="bg-white border-t border-gray-100 px-4 py-3">
           <div className="flex items-center justify-between mb-2">
@@ -159,24 +267,46 @@ export default function ChatClient({ matchId }: { matchId: string }) {
               <Sparkles className="w-4 h-4" style={{ color: '#7E2841' }} />
               <p className="text-sm font-bold" style={{ color: '#7E2841' }}>AI返信サポート</p>
             </div>
-            <button onClick={() => setShowAiPanel(false)} className="p-1 rounded-full hover:bg-gray-100 transition"><X className="w-4 h-4 text-gray-400" /></button>
+            <button onClick={() => setShowAiPanel(false)} className="p-1 rounded-full hover:bg-gray-100 transition">
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
           </div>
           <div className="space-y-2">
             {aiSuggestions.map((s, i) => (
-              <button key={i} onClick={() => sendMessage(s)} className="w-full text-left text-sm px-3 py-2.5 rounded-xl border transition" style={{ borderColor: '#E8E0E2', background: '#FAFAFA', color: '#1A1A1A' }}>{s}</button>
+              <button key={i} onClick={() => sendMessage(s)} className="w-full text-left text-sm px-3 py-2.5 rounded-xl border transition" style={{ borderColor: '#E8E0E2', background: '#FAFAFA', color: '#1A1A1A' }}>
+                {s}
+              </button>
             ))}
           </div>
           <p className="text-[10px] text-gray-400 text-center mt-2">✨ AIが会話の流れを読んで返信を提案しています</p>
         </div>
       )}
 
+      {/* Input bar */}
       <div className="bg-white border-t border-gray-100 px-4 py-3 pb-6">
         <div className="flex items-end gap-2">
-          <button onClick={() => setShowAiPanel((v) => !v)} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition active:scale-90" style={{ background: showAiPanel ? '#7E2841' : '#F5E6EA', color: showAiPanel ? '#fff' : '#7E2841' }}>
+          <button
+            onClick={() => setShowAiPanel((v) => !v)}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition active:scale-90"
+            style={{ background: showAiPanel ? '#7E2841' : '#F5E6EA', color: showAiPanel ? '#fff' : '#7E2841' }}
+          >
             <Sparkles className="w-5 h-5" />
           </button>
-          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="メッセージを入力..." rows={1} className="flex-1 px-4 py-2.5 bg-gray-100 rounded-2xl text-sm resize-none focus:outline-none max-h-28" style={{ caretColor: '#7E2841' }} />
-          <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition disabled:opacity-40 active:scale-90" style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+            placeholder="メッセージを入力..."
+            rows={1}
+            className="flex-1 px-4 py-2.5 bg-gray-100 rounded-2xl text-sm resize-none focus:outline-none max-h-28"
+            style={{ caretColor: '#7E2841' }}
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={!input.trim()}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition disabled:opacity-40 active:scale-90"
+            style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}
+          >
             <Send className="w-4 h-4 text-white" />
           </button>
         </div>
