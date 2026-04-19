@@ -5,6 +5,7 @@ export function generateStaticParams() {
   return DEMO_MATCHES.map((m) => ({ id: m.id }))
 }
 
-export default function ChatPage({ params }: { params: { id: string } }) {
-  return <ChatClient matchId={params.id} />
+export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <ChatClient matchId={id} />
 }
