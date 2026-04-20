@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SlidersHorizontal, Camera, CheckCircle, Heart } from 'lucide-react'
+import { SlidersHorizontal, Camera, CheckCircle, Heart, User } from 'lucide-react'
 import { CANDIDATE_PROFILES, MATCHED_PROFILES, type DemoProfile } from '@/lib/demo-data'
 
 const SORT_TABS = [
@@ -97,12 +97,13 @@ export default function DemoDiscoverPage() {
           {profiles.slice(0, 6).map((p) => (
             <div key={p.id} className="flex-shrink-0 flex flex-col items-center gap-1">
               <div
-                className={`w-14 h-14 rounded-full bg-gradient-to-br ${p.color} flex items-center justify-center text-2xl relative shadow-sm`}
-                style={{
-                  border: p.isOnline ? '2px solid #22c55e' : '2px solid #E8E0E2',
-                }}
+                className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center relative shadow-sm overflow-hidden"
+                style={{ border: p.isOnline ? '2px solid #22c55e' : '2px solid #E8E0E2' }}
               >
-                <span>{p.emoji}</span>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} className="w-full h-full object-cover" alt={p.name} />
+                  : <User className="w-8 h-8 text-gray-400" />
+                }
                 {p.isOnline && (
                   <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                 )}
@@ -174,10 +175,13 @@ function ProfileCard({
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
       {/* Photo area */}
       <div
-        className={`relative bg-gradient-to-br ${profile.color} flex items-center justify-center`}
+        className="relative bg-gray-200 flex items-center justify-center overflow-hidden"
         style={{ aspectRatio: '3/4' }}
       >
-        <span className="text-6xl">{profile.emoji}</span>
+        {profile.avatar_url
+          ? <img src={profile.avatar_url} className="w-full h-full object-cover absolute inset-0" alt={profile.name} />
+          : <User className="w-20 h-20 text-gray-400" />
+        }
 
         {/* Photo count */}
         <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[11px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">

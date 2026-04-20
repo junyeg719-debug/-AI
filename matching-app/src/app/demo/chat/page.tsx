@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, User } from 'lucide-react'
 import { DEMO_MATCHES, MATCHED_PROFILES, DEMO_MESSAGES, DEMO_USER_ID } from '@/lib/demo-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -44,10 +44,11 @@ export default function DemoChatListPage() {
             >
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div
-                  className={`w-14 h-14 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-2xl`}
-                >
-                  {partner.emoji}
+                <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                  {partner.avatar_url
+                    ? <img src={partner.avatar_url} className="w-full h-full object-cover" alt={partner.name} />
+                    : <User className="w-8 h-8 text-gray-400" />
+                  }
                 </div>
                 {partner.isOnline && (
                   <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />

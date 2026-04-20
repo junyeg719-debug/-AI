@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil } from 'lucide-react'
+import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User } from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
 
 const MENU_ROWS = [
@@ -41,8 +41,8 @@ export default function ProfileDashboard() {
         <button onClick={() => fileRef.current?.click()} className="relative flex-shrink-0">
           {photo
             ? <img src={photo} alt="avatar" className="w-20 h-20 rounded-full object-cover border border-gray-200" />
-            : <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${DEMO_USER.color} flex items-center justify-center text-4xl`}>
-                {DEMO_USER.emoji}
+            : <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
+                <User className="w-12 h-12 text-gray-400" />
               </div>
           }
           <div className="absolute bottom-0.5 right-0.5 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow border border-gray-200">
