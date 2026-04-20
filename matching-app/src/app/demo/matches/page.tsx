@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Camera, CheckCircle, Lock } from 'lucide-react'
+import { Camera, CheckCircle, Lock, User } from 'lucide-react'
 import { LIKES_RECEIVED, type DemoProfile } from '@/lib/demo-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -81,10 +81,13 @@ function LikeCard({
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
       {/* Photo */}
       <div
-        className={`relative bg-gradient-to-br ${profile.color} flex items-center justify-center`}
+        className="relative bg-gray-200 flex items-center justify-center overflow-hidden"
         style={{ aspectRatio: '3/4', filter: isBlurred ? 'blur(8px)' : 'none' }}
       >
-        <span className="text-6xl">{profile.emoji}</span>
+        {profile.avatar_url
+          ? <img src={profile.avatar_url} className="w-full h-full object-cover absolute inset-0" alt="" />
+          : <User className="w-20 h-20 text-gray-400" />
+        }
         <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[11px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
           <Camera className="w-3 h-3" />
           <span>{profile.photoCount}</span>

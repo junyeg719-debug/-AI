@@ -1,6 +1,6 @@
 'use client'
 
-import { Info } from 'lucide-react'
+import { Info, User } from 'lucide-react'
 import { DEMO_FOOTPRINTS } from '@/lib/demo-data'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -105,10 +105,11 @@ export default function DemoFootprintsPage() {
               >
                 {/* Avatar with match % badge */}
                 <div className="relative flex-shrink-0">
-                  <div
-                    className={`w-14 h-14 rounded-full bg-gradient-to-br ${fp.profile.color} flex items-center justify-center text-2xl`}
-                  >
-                    {fp.profile.emoji}
+                  <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {fp.profile.avatar_url
+                      ? <img src={fp.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+                      : <User className="w-8 h-8 text-gray-400" />
+                    }
                   </div>
                   <div
                     className="absolute -bottom-1 -right-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full"
