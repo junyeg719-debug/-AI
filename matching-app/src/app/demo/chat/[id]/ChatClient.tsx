@@ -134,46 +134,14 @@ export default function ChatClient({ matchId }: { matchId: string }) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Photo strip */}
-        <div className="bg-white px-4 py-3 border-b border-gray-100">
-          <div className="flex gap-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                {i === 0 ? (
-                  <div className={`w-full h-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-2xl`}>{partner.emoji}</div>
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-300 text-[10px]">写真</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Common talking points */}
+        {/* Common tags */}
         {commonTags.length > 0 && (
-          <div className="mx-3 mt-3">
-            <div className="flex justify-center mb-1">
-              <span className="text-xs text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">話題になりそうな共通点</span>
-            </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <div className="flex gap-2 mb-3">
-                <div className="w-14 h-14 rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {partner.avatar_url ? <img src={partner.avatar_url} className="w-full h-full object-cover" alt="" /> : <User className="w-8 h-8 text-gray-400" />}
-                </div>
-                <div className="w-14 h-14 rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden">
-                  <User className="w-8 h-8 text-gray-400" />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {commonTags.map((tag) => (
-                  <span key={tag.label} className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 flex items-center gap-1">
-                    <span>{tag.icon}</span>{tag.label}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <div className="px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
+            {commonTags.map((tag) => (
+              <span key={tag.label} className="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-white text-gray-600 flex items-center gap-1">
+                <span>{tag.icon}</span>{tag.label}
+              </span>
+            ))}
           </div>
         )}
 
