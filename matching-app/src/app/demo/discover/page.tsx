@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { SlidersHorizontal, Camera, CheckCircle, Heart, User } from 'lucide-react'
 import { CANDIDATE_PROFILES, MATCHED_PROFILES, type DemoProfile } from '@/lib/demo-data'
 
@@ -172,7 +173,7 @@ function ProfileCard({
   onLike: () => void
 }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+    <Link href={`/demo/profile/${profile.id}`} className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform block">
       {/* Photo area */}
       <div
         className="relative bg-gray-200 flex items-center justify-center overflow-hidden"
@@ -238,6 +239,6 @@ function ProfileCard({
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
