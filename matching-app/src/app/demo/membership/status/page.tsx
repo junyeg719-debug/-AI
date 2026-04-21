@@ -57,7 +57,7 @@ export default function MembershipStatusPage() {
         content={<p className="text-sm text-gray-700 text-center py-1">0 P</p>}
         footer={<PointHistoryLink />}
       />
-      <PinkButton label="ポイント購入に進む" />
+      <PinkButton href="/demo/points" label="ポイント購入に進む" />
 
       {/* Bottom comparison link */}
       <div className="mt-5 mb-8 px-4">

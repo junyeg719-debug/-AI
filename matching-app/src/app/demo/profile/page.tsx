@@ -66,10 +66,10 @@ export default function ProfileDashboard() {
           <p className="text-[11px] text-gray-400 mb-1">残いいね！数</p>
           <p className="text-sm font-bold text-gray-800">👍 131</p>
         </div>
-        <div className="flex-1 py-4 text-center">
+        <Link href="/demo/points" className="flex-1 py-4 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-1">残ポイント数</p>
           <p className="text-sm font-bold text-gray-800">🪙 0</p>
-        </div>
+        </Link>
       </div>
 
       {/* Icon grid */}
@@ -103,7 +103,7 @@ export default function ProfileDashboard() {
           有料会員プラン
           <span className="text-xs font-normal mt-0.5">詳細を見る →</span>
         </Link>
-        <Link href="/demo/membership/status" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+        <Link href="/demo/points" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
           ポイントを
           <span className="mt-0.5">購入する →</span>
         </Link>
