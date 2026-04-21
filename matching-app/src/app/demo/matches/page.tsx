@@ -6,10 +6,12 @@ import { Camera, CheckCircle, Lock, User, Heart } from 'lucide-react'
 import { LIKES_RECEIVED, MATCH_ID_BY_PROFILE_ID, type DemoProfile } from '@/lib/demo-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useLikes } from '@/lib/likes-context'
 
 const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FFEAA7', '#DDA0DD']
 
 export default function DemoLikesPage() {
+  const { decrement } = useLikes()
   const [matchedProfile, setMatchedProfile] = useState<DemoProfile | null>(null)
   const [matchId, setMatchId] = useState('')
 
@@ -20,6 +22,7 @@ export default function DemoLikesPage() {
     const mid = MATCH_ID_BY_PROFILE_ID[profile.id] ?? 'match-006'
     setMatchId(mid)
     setMatchedProfile(profile)
+    decrement()
   }
 
   return (

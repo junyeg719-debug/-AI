@@ -11,6 +11,7 @@ import {
   MATCH_ID_BY_PROFILE_ID,
   type DemoProfile,
 } from '@/lib/demo-data'
+import { useLikes } from '@/lib/likes-context'
 
 // ── Constants ──────────────────────────────────
 const SORT_TABS = [
@@ -72,6 +73,7 @@ function hasActiveFilter(f: FilterState): boolean {
 // ── Main page ──────────────────────────────────
 export default function DemoDiscoverPage() {
   const router = useRouter()
+  const { decrement } = useLikes()
   const [activeTab, setActiveTab] = useState('recommend')
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [filterOpen, setFilterOpen] = useState(false)
@@ -91,6 +93,7 @@ export default function DemoDiscoverPage() {
   const confirmLike = (profile: DemoProfile) => {
     setLikedIds(prev => new Set([...prev, profile.id]))
     setPendingLike(null)
+    decrement()
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
       setMatchId(MATCH_ID_BY_PROFILE_ID[profile.id])
       setMatchedProfile(profile)

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User } from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
+import { useLikes } from '@/lib/likes-context'
 
 const MENU_ROWS = [
   [
@@ -24,6 +25,7 @@ const MENU_ROWS = [
 ]
 
 export default function ProfileDashboard() {
+  const { remaining } = useLikes()
   const [photo, setPhoto] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -64,7 +66,7 @@ export default function ProfileDashboard() {
         </Link>
         <div className="flex-1 py-4 text-center">
           <p className="text-[11px] text-gray-400 mb-1">残いいね！数</p>
-          <p className="text-sm font-bold text-gray-800">👍 131</p>
+          <p className="text-sm font-bold text-gray-800">👍 {remaining}</p>
         </div>
         <Link href="/demo/points" className="flex-1 py-4 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-1">残ポイント数</p>

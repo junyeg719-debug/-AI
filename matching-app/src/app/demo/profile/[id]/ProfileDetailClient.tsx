@@ -5,11 +5,13 @@ import { ArrowLeft, MoreHorizontal, User, CheckCircle, ThumbsUp, Undo2, X, Send 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type DemoProfile, LIKED_ME_PROFILE_IDS, MATCH_ID_BY_PROFILE_ID } from '@/lib/demo-data'
+import { useLikes } from '@/lib/likes-context'
 
 const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FFEAA7', '#DDA0DD']
 
 export default function ProfileDetailClient({ profile }: { profile: DemoProfile }) {
   const router = useRouter()
+  const { decrement } = useLikes()
   const [liked, setLiked] = useState(false)
   const [showStickyHeader, setShowStickyHeader] = useState(false)
   const [showCommentModal, setShowCommentModal] = useState(false)
@@ -39,6 +41,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
   const handleLike = () => {
     if (liked) return
     setLiked(true)
+    decrement()
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
       triggerMatch()
     }
@@ -49,6 +52,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
     setComment('')
     if (!liked) {
       setLiked(true)
+      decrement()
       if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
         triggerMatch()
       }
