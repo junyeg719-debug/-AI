@@ -6,13 +6,10 @@ import Link from 'next/link'
 import { type DemoProfile } from '@/lib/demo-data'
 
 export default function ProfileDetailClient({ profile }: { profile: DemoProfile }) {
-  const [photos, setPhotos] = useState<(string | null)[]>(Array(4).fill(null))
-  const [activePhoto, setActivePhoto] = useState(0)
   const [liked, setLiked] = useState(false)
   const [showStickyHeader, setShowStickyHeader] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const fileRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -24,17 +21,6 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
     el.addEventListener('scroll', onScroll)
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
-
-  const handlePhotoUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setPhotos(prev => prev.map((p, i) => i === index ? url : p))
-    setActivePhoto(index)
-    e.target.value = ''
-  }
-
-  const currentPhoto = photos[activePhoto]
 
   const FIELDS: [string, string][] = [
     ['身長', profile.height ? `${profile.height}cm` : '−'],
@@ -55,8 +41,8 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </Link>
           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {photos[0]
-              ? <img src={photos[0]} className="w-full h-full object-cover" alt="" />
+            {profile.avatar_url
+              ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="" />
               : <User className="w-5 h-5 text-gray-400" />
             }
           </div>
@@ -67,16 +53,12 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
 
       {/* Hero photo */}
       <div ref={heroRef} className="relative bg-gray-200" style={{ aspectRatio: '3/4' }}>
-        {currentPhoto
-          ? <img src={currentPhoto} className="w-full h-full object-cover" alt="" />
+        {profile.avatar_url
+          ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="" />
           : <div className="w-full h-full flex items-center justify-center">
               <User className="w-32 h-32 text-gray-300" />
             </div>
         }
-        <button
-          onClick={() => fileRefs.current[activePhoto]?.click()}
-          className="absolute inset-0"
-        />
         <Link href="/demo/discover" className="absolute top-12 left-4 w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
           <ArrowLeft className="w-5 h-5 text-white" />
         </Link>
@@ -85,27 +67,8 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
         </button>
       </div>
 
-      {/* Thumbnail strip */}
-      <div className="px-4 py-3 flex gap-2 bg-white">
-        {photos.map((photo, i) => (
-          <button
-            key={i}
-            onClick={() => { setActivePhoto(i); if (!photo) fileRefs.current[i]?.click() }}
-            className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition"
-            style={{ borderColor: i === activePhoto ? '#7E2841' : '#E5E7EB' }}
-          >
-            {photo
-              ? <img src={photo} className="w-full h-full object-cover" alt="" />
-              : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <User className="w-6 h-6 text-gray-300" />
-                </div>
-            }
-          </button>
-        ))}
-      </div>
-
       {/* Name & like */}
-      <div className="px-4 pb-3 bg-white">
+      <div className="px-4 pb-3 pt-4 bg-white">
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
           <span className="text-lg text-gray-500">
@@ -158,18 +121,6 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
       </div>
 
       <div className="h-12" />
-
-      {/* Hidden file inputs */}
-      {Array.from({ length: 4 }).map((_, i) => (
-        <input
-          key={i}
-          ref={el => { fileRefs.current[i] = el }}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={e => handlePhotoUpload(i, e)}
-        />
-      ))}
     </div>
   )
 }
