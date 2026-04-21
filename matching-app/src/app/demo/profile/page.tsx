@@ -58,10 +58,10 @@ export default function ProfileDashboard() {
 
       {/* Stats row */}
       <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100">
-        <div className="flex-1 py-4 text-center">
+        <Link href="/demo/membership/status" className="flex-1 py-4 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-1">会員ステータス</p>
           <p className="text-sm font-bold text-blue-500">無料会員</p>
-        </div>
+        </Link>
         <div className="flex-1 py-4 text-center">
           <p className="text-[11px] text-gray-400 mb-1">残いいね！数</p>
           <p className="text-sm font-bold text-gray-800">👍 131</p>
@@ -117,13 +117,14 @@ export default function ProfileDashboard() {
 
       {/* Banners */}
       <div className="px-4 pt-4 flex gap-3">
-        <div className="flex-1 h-24 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg, #1a73e8, #0d47a1)' }}>
-          有料会員プラン<br />
-          <span className="text-xs font-normal">詳細を見る →</span>
-        </div>
-        <div className="flex-1 h-24 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
-          ポイントを<br />購入する →
-        </div>
+        <Link href="/demo/membership/plan" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a73e8, #0d47a1)' }}>
+          有料会員プラン
+          <span className="text-xs font-normal mt-0.5">詳細を見る →</span>
+        </Link>
+        <Link href="/demo/membership/status" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+          ポイントを
+          <span className="mt-0.5">購入する →</span>
+        </Link>
       </div>
 
       {/* Instagram link */}
