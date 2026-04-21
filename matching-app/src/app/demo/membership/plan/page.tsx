@@ -92,7 +92,7 @@ export default function MembershipPlanPage() {
             <div className="w-full h-full bg-gradient-to-br from-pink-200 to-pink-300" />
           </div>
           <p className="text-sm text-gray-700 flex-1">
-            Omiaiでお付き合いに発展した方は
+            魅力マッチでお付き合いに発展した方は
             <span className="font-black text-base" style={{ color: '#E8348B' }}>4〜5ヶ月間</span>
             利用しています
           </p>
@@ -107,7 +107,7 @@ export default function MembershipPlanPage() {
           <span className="inline-block ml-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#FFF4B0', color: '#B8860B' }}>おすすめ</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
-          ※2023年6月〜2023年11月までにOmiaiを退会した男性ユーザーを対象としたアンケート
+          ※2023年6月〜2023年11月までに魅力マッチを退会した男性ユーザーを対象としたアンケート
         </p>
       </div>
 

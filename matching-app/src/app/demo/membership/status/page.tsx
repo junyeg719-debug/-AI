@@ -44,9 +44,9 @@ export default function MembershipStatusPage() {
         }
       />
 
-      {/* Omiaiポイント section */}
+      {/* 魅力マッチポイント section */}
       <Section
-        title="Omiaiポイント"
+        title="魅力マッチポイント"
         content={<p className="text-sm text-gray-700 text-center py-1">0 P</p>}
         footer={<PointHistoryLink />}
       />
