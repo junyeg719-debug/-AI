@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User, Heart, ChevronRight } from 'lucide-react'
+import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User } from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
 
 const MENU_ROWS = [
@@ -96,24 +96,6 @@ export default function ProfileDashboard() {
           </div>
         ))}
       </div>
-
-      {/* Onboarding demo entry */}
-      <Link
-        href="/demo/onboarding"
-        className="mx-4 mt-3 mb-1 flex items-center gap-3 p-4 rounded-2xl border border-dashed border-gray-200 active:bg-gray-50 transition"
-      >
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: '#F5E6EA' }}
-        >
-          <Heart className="w-5 h-5" style={{ color: '#7E2841' }} />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold text-gray-800">会員登録フローを体験</p>
-          <p className="text-xs text-gray-400 mt-0.5">デモ：登録の流れを確認できます</p>
-        </div>
-        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-      </Link>
 
       {/* Banners */}
       <div className="px-4 pt-4 flex gap-3">
