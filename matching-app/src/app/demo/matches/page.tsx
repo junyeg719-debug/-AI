@@ -1,14 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Camera, CheckCircle, Lock, User } from 'lucide-react'
-import { LIKES_RECEIVED, type DemoProfile } from '@/lib/demo-data'
+import { useRouter } from 'next/navigation'
+import { Camera, CheckCircle, Lock, User, Heart } from 'lucide-react'
+import { LIKES_RECEIVED, MATCH_ID_BY_PROFILE_ID, type DemoProfile } from '@/lib/demo-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
+const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FFEAA7', '#DDA0DD']
+
 export default function DemoLikesPage() {
-  const newLikes = LIKES_RECEIVED.filter((l) => l.isNew)
-  const pastLikes = LIKES_RECEIVED.filter((l) => !l.isNew)
+  const [matchedProfile, setMatchedProfile] = useState<DemoProfile | null>(null)
+  const [matchId, setMatchId] = useState('')
+
+  const newLikes = LIKES_RECEIVED.filter(l => l.isNew)
+  const pastLikes = LIKES_RECEIVED.filter(l => !l.isNew)
+
+  const handleLikeBack = (profile: DemoProfile) => {
+    const mid = MATCH_ID_BY_PROFILE_ID[profile.id] ?? 'match-006'
+    setMatchId(mid)
+    setMatchedProfile(profile)
+  }
 
   return (
     <div className="min-h-screen">
@@ -44,7 +56,13 @@ export default function DemoLikesPage() {
         <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">新着</p>
         <div className="grid grid-cols-2 gap-3">
           {newLikes.map(({ profile, likedAt }) => (
-            <LikeCard key={profile.id} profile={profile} likedAt={likedAt} isBlurred={false} />
+            <LikeCard
+              key={profile.id}
+              profile={profile}
+              likedAt={likedAt}
+              isBlurred={false}
+              onLikeBack={handleLikeBack}
+            />
           ))}
         </div>
       </div>
@@ -55,27 +73,65 @@ export default function DemoLikesPage() {
           <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">過去のいいね！</p>
           <div className="grid grid-cols-2 gap-3">
             {pastLikes.map(({ profile, likedAt }) => (
-              <LikeCard key={profile.id} profile={profile} likedAt={likedAt} isBlurred={true} />
+              <LikeCard
+                key={profile.id}
+                profile={profile}
+                likedAt={likedAt}
+                isBlurred={true}
+                onLikeBack={handleLikeBack}
+              />
             ))}
           </div>
         </div>
       )}
 
       <div className="h-6" />
+
+      {/* Match popup */}
+      {matchedProfile && (
+        <MatchPopup
+          profile={matchedProfile}
+          matchId={matchId}
+          onClose={() => setMatchedProfile(null)}
+        />
+      )}
+
+      <style>{`
+        @keyframes confettiFall {
+          0% { transform: translateY(-60px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes matchCardIn {
+          0% { transform: scale(0.8) translateY(40px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes heartPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.25); }
+        }
+      `}</style>
     </div>
   )
 }
 
+// ── Like Card ──────────────────────────────────
 function LikeCard({
   profile,
   likedAt,
   isBlurred,
+  onLikeBack,
 }: {
   profile: DemoProfile
   likedAt: string
   isBlurred: boolean
+  onLikeBack: (profile: DemoProfile) => void
 }) {
   const [liked, setLiked] = useState(false)
+
+  const handleLike = () => {
+    setLiked(true)
+    onLikeBack(profile)
+  }
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
@@ -112,32 +168,122 @@ function LikeCard({
           {profile.height}cm {profile.occupation}
         </p>
 
-        {/* Like back / time */}
         {isBlurred ? (
           <div
-            className="w-full text-center text-[11px] font-medium py-1.5 rounded-lg"
+            className="w-full text-center text-[11px] font-medium py-1.5 rounded-lg flex items-center justify-center gap-1"
             style={{ background: '#F5E6EA', color: '#7E2841' }}
           >
-            <Lock className="w-3 h-3 inline mr-1" />
+            <Lock className="w-3 h-3" />
             解除して見る
           </div>
+        ) : liked ? (
+          <div
+            className="w-full text-center text-[11px] font-bold py-1.5 rounded-lg"
+            style={{ background: '#7E2841', color: 'white' }}
+          >
+            ❤️ いいね済み
+          </div>
         ) : (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-1">
             <button
-              onClick={() => setLiked((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition"
-              style={{
-                background: liked ? '#7E2841' : '#F5E6EA',
-                color: liked ? '#fff' : '#7E2841',
-              }}
+              onClick={handleLike}
+              className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg transition active:scale-95"
+              style={{ background: '#F5E6EA', color: '#7E2841' }}
             >
-              👍 {liked ? 'いいね済み' : 'いいね！'}
+              <Heart className="w-3 h-3 fill-[#7E2841]" style={{ color: '#7E2841' }} />
+              いいね！
             </button>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[10px] text-gray-400 flex-shrink-0">
               {formatDistanceToNow(new Date(likedAt), { addSuffix: true, locale: ja })}
             </span>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── Match Popup ────────────────────────────────
+function MatchPopup({
+  profile,
+  matchId,
+  onClose,
+}: {
+  profile: DemoProfile
+  matchId: string
+  onClose: () => void
+}) {
+  const router = useRouter()
+  const pieces = Array.from({ length: 36 }, (_, i) => i)
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 bg-black/75" />
+
+      {/* Confetti */}
+      {pieces.map(i => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${(i * 11 + 5) % 100}%`,
+            top: '-40px',
+            width: `${7 + (i % 4) * 3}px`,
+            height: `${7 + (i % 4) * 3}px`,
+            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+            borderRadius: i % 3 !== 0 ? '50%' : '3px',
+            animation: `confettiFall ${2 + (i % 5) * 0.35}s ${(i * 0.11) % 2.2}s ease-in forwards`,
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
+
+      {/* Card */}
+      <div
+        className="relative bg-white rounded-3xl px-8 py-10 mx-5 text-center shadow-2xl w-full max-w-sm"
+        style={{ animation: 'matchCardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+      >
+        {/* Avatars */}
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div
+            className="rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow-md flex-shrink-0"
+            style={{ width: 72, height: 72 }}
+          >
+            <User className="w-10 h-10 text-gray-400" />
+          </div>
+          <Heart
+            className="w-9 h-9 fill-[#7E2841] flex-shrink-0"
+            style={{ color: '#7E2841', animation: 'heartPulse 0.8s ease-in-out infinite' }}
+          />
+          <div
+            className="rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow-md flex-shrink-0"
+            style={{ width: 72, height: 72 }}
+          >
+            {profile.avatar_url
+              ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="" />
+              : <User className="w-10 h-10 text-gray-400" />
+            }
+          </div>
+        </div>
+
+        <p className="text-2xl font-black text-gray-900 mb-1">マッチしました！</p>
+        <p className="text-sm text-gray-500 mb-2">
+          {profile.name}さんとマッチングが成立しました 🎉
+        </p>
+        <p className="text-xs text-gray-400 mb-8">
+          共通の趣味や話題で盛り上がりましょう
+        </p>
+
+        <button
+          onClick={() => { onClose(); router.push(`/demo/chat/${matchId}`) }}
+          className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-sm mb-3"
+          style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}
+        >
+          メッセージを送る
+        </button>
+        <button onClick={onClose} className="w-full py-2 text-sm text-gray-400">
+          あとで
+        </button>
       </div>
     </div>
   )

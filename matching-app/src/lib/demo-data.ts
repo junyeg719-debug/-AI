@@ -194,6 +194,48 @@ export const CANDIDATE_PROFILES: DemoProfile[] = [
 ]
 
 // ──────────────────────────────────────────────
+// 「いいね！をくれた」プロフィール（named constants for reuse）
+// ──────────────────────────────────────────────
+export const NANA_PROFILE: DemoProfile = {
+  id: 'profile-l01', user_id: 'user-l01',
+  name: 'なな', age: 26, gender: 'female', looking_for: 'male',
+  bio: 'ハリネズミカフェが好きで動物全般大好きです！看護師をしています。',
+  avatar_url: null, photos: [],
+  interests: ['動物', 'カフェ', '旅行', '料理', '読書'],
+  location: '滋賀県', occupation: '看護師', height: 158,
+  bodyType: 'やや細め', smoking: '吸わない',
+  created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+  emoji: '🦔', color: 'from-orange-300 to-amber-400',
+  likeCount: 86, photoCount: 3, matchPercent: 90, isOnline: true, isVerified: true,
+}
+
+export const MIHO_PROFILE: DemoProfile = {
+  id: 'profile-l02', user_id: 'user-l02',
+  name: 'みほ', age: 25, gender: 'female', looking_for: 'male',
+  bio: '受付の仕事をしています。笑顔が大切にしています😊',
+  avatar_url: null, photos: [],
+  interests: ['ショッピング', 'カフェ', '音楽', 'ドライブ', '旅行'],
+  location: '滋賀県', occupation: '受付', height: 157,
+  bodyType: '普通', smoking: '吸わない',
+  created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+  emoji: '🌷', color: 'from-pink-300 to-rose-300',
+  likeCount: 134, photoCount: 2, matchPercent: 83, isOnline: false, isVerified: true,
+}
+
+export const ENA_PROFILE: DemoProfile = {
+  id: 'profile-l03', user_id: 'user-l03',
+  name: 'えな', age: 27, gender: 'female', looking_for: 'male',
+  bio: 'ヨガインストラクターをしています。自然と健康が好きです。',
+  avatar_url: null, photos: [],
+  interests: ['ヨガ', '自然', 'グルメ', '旅行', 'スポーツ'],
+  location: '京都府', occupation: 'ヨガインストラクター', height: 161,
+  bodyType: 'やや細め', smoking: '吸わない',
+  created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+  emoji: '🧘', color: 'from-green-300 to-emerald-400',
+  likeCount: 209, photoCount: 3, matchPercent: 79, isOnline: true, isVerified: true,
+}
+
+// ──────────────────────────────────────────────
 // マッチング済みプロフィール
 // ──────────────────────────────────────────────
 export const MATCHED_PROFILES: DemoProfile[] = [
@@ -233,67 +275,60 @@ export const MATCHED_PROFILES: DemoProfile[] = [
     emoji: '🌙', color: 'from-indigo-300 to-blue-400',
     likeCount: 445, photoCount: 4, matchPercent: 75, isOnline: false, isVerified: false,
   },
+  // Potential matches (already liked the demo user)
+  NANA_PROFILE,
+  MIHO_PROFILE,
+  ENA_PROFILE,
 ]
+
+// ──────────────────────────────────────────────
+// マッチング機構
+// ──────────────────────────────────────────────
+
+// Profile IDs of users who have already liked the demo user
+export const LIKED_ME_PROFILE_IDS = new Set([
+  'profile-001',   // まい
+  'profile-003',   // りな
+  'profile-l01',   // なな
+  'profile-l02',   // みほ
+  'profile-l03',   // えな
+])
+
+// Maps profile ID → match ID for post-match navigation
+export const MATCH_ID_BY_PROFILE_ID: Record<string, string> = {
+  'profile-001': 'match-004',
+  'profile-003': 'match-005',
+  'profile-l01': 'match-006',
+  'profile-l02': 'match-007',
+  'profile-l03': 'match-008',
+}
 
 // ──────────────────────────────────────────────
 // 「いいね！をくれた」プロフィール（新着）
 // ──────────────────────────────────────────────
 export const LIKES_RECEIVED: { profile: DemoProfile; likedAt: string; isNew: boolean }[] = [
   {
-    profile: {
-      id: 'profile-l01', user_id: 'user-l01',
-      name: 'なな', age: 26, gender: 'female', looking_for: 'male',
-      bio: 'ハリネズミカフェが好きで動物全般大好きです！看護師をしています。',
-      avatar_url: null, photos: [],
-      interests: ['動物', 'カフェ', '旅行', '料理', '読書'],
-      location: '滋賀県', occupation: '看護師', height: 158,
-      bodyType: 'やや細め', smoking: '吸わない',
-      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
-      emoji: '🦔', color: 'from-orange-300 to-amber-400',
-      likeCount: 86, photoCount: 3, matchPercent: 90, isOnline: true, isVerified: true,
-    },
+    profile: NANA_PROFILE,
     likedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
     isNew: true,
   },
   {
-    profile: {
-      id: 'profile-l02', user_id: 'user-l02',
-      name: 'みほ', age: 25, gender: 'female', looking_for: 'male',
-      bio: '受付の仕事をしています。笑顔が大切にしています😊',
-      avatar_url: null, photos: [],
-      interests: ['ショッピング', 'カフェ', '音楽', 'ドライブ', '旅行'],
-      location: '滋賀県', occupation: '受付', height: 157,
-      bodyType: '普通', smoking: '吸わない',
-      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
-      emoji: '🌷', color: 'from-pink-300 to-rose-300',
-      likeCount: 134, photoCount: 2, matchPercent: 83, isOnline: false, isVerified: true,
-    },
+    profile: MIHO_PROFILE,
     likedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     isNew: true,
   },
   {
-    profile: {
-      id: 'profile-l03', user_id: 'user-l03',
-      name: 'えな', age: 27, gender: 'female', looking_for: 'male',
-      bio: 'ヨガインストラクターをしています。自然と健康が好きです。',
-      avatar_url: null, photos: [],
-      interests: ['ヨガ', '自然', 'グルメ', '旅行', 'スポーツ'],
-      location: '京都府', occupation: 'ヨガインストラクター', height: 161,
-      bodyType: 'やや細め', smoking: '吸わない',
-      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
-      emoji: '🧘', color: 'from-green-300 to-emerald-400',
-      likeCount: 209, photoCount: 3, matchPercent: 79, isOnline: true, isVerified: true,
-    },
+    profile: ENA_PROFILE,
     likedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     isNew: true,
   },
   {
-    profile: CANDIDATE_PROFILES[0],
+    profile: CANDIDATE_PROFILES[0], // まい
     likedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
     isNew: false,
   },
   {
-    profile: CANDIDATE_PROFILES[2],
+    profile: CANDIDATE_PROFILES[2], // りな
     likedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     isNew: false,
   },
@@ -340,7 +375,7 @@ export const DEMO_FOOTPRINTS: DemoFootprint[] = [
   // 4/11
   {
     id: 'fp-003',
-    profile: CANDIDATE_PROFILES[0], // まい 29歳 滋賀
+    profile: CANDIDATE_PROFILES[0],
     visitedAt: new Date('2026-04-11T23:38:00').toISOString(),
     likeStatus: 'liked',
   },
@@ -363,31 +398,20 @@ export const DEMO_FOOTPRINTS: DemoFootprint[] = [
   },
   {
     id: 'fp-005',
-    profile: {
-      id: 'profile-f05', user_id: 'user-f05',
-      name: 'なな', age: 26, gender: 'female', looking_for: 'male',
-      bio: 'ハリネズミカフェが好きで動物全般大好きです！看護師をしています。',
-      avatar_url: null, photos: [],
-      interests: ['動物', 'カフェ', '旅行', '料理', '読書'],
-      location: '滋賀県', occupation: '看護師', height: 158,
-      bodyType: 'やや細め', smoking: '吸わない',
-      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
-      emoji: '🦔', color: 'from-orange-300 to-amber-400',
-      likeCount: 86, photoCount: 3, matchPercent: 90, isOnline: true, isVerified: true,
-    },
+    profile: NANA_PROFILE,
     visitedAt: new Date('2026-04-11T18:49:00').toISOString(),
     likeStatus: 'thanked',
   },
   // 4/10
   {
     id: 'fp-006',
-    profile: CANDIDATE_PROFILES[7], // ことね 24歳 滋賀
+    profile: CANDIDATE_PROFILES[7],
     visitedAt: new Date('2026-04-10T15:22:00').toISOString(),
     likeStatus: 'liked',
   },
   {
     id: 'fp-007',
-    profile: CANDIDATE_PROFILES[4], // みさき 30歳 大阪
+    profile: CANDIDATE_PROFILES[4],
     visitedAt: new Date('2026-04-10T11:10:00').toISOString(),
     likeStatus: null,
   },
@@ -416,6 +440,41 @@ export const DEMO_MATCHES: DemoMatch[] = [
     user1_id: DEMO_USER_ID,
     user2_id: 'user-m03',
     created_at: new Date(Date.now() - 113 * 24 * 60 * 60 * 1000).toISOString(),
+    last_message_at: null,
+  },
+  {
+    id: 'match-004',
+    user1_id: DEMO_USER_ID,
+    user2_id: 'user-001', // まい
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    last_message_at: null,
+  },
+  {
+    id: 'match-005',
+    user1_id: DEMO_USER_ID,
+    user2_id: 'user-003', // りな
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    last_message_at: null,
+  },
+  {
+    id: 'match-006',
+    user1_id: DEMO_USER_ID,
+    user2_id: 'user-l01', // なな
+    created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    last_message_at: null,
+  },
+  {
+    id: 'match-007',
+    user1_id: DEMO_USER_ID,
+    user2_id: 'user-l02', // みほ
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    last_message_at: null,
+  },
+  {
+    id: 'match-008',
+    user1_id: DEMO_USER_ID,
+    user2_id: 'user-l03', // えな
+    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     last_message_at: null,
   },
 ]
@@ -474,9 +533,14 @@ export const DEMO_MESSAGES: Record<string, DemoMessage[]> = {
     },
   ],
   'match-003': [],
+  'match-004': [],
+  'match-005': [],
+  'match-006': [],
+  'match-007': [],
+  'match-008': [],
 }
 
-// 全プロフィール（検索用）
+// 全プロフィール（チャット・プロフィール詳細ページの検索用）
 export const ALL_PROFILES: DemoProfile[] = [
   ...CANDIDATE_PROFILES,
   ...MATCHED_PROFILES,

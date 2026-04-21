@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { SlidersHorizontal, User } from 'lucide-react'
-import { DEMO_MATCHES, MATCHED_PROFILES, DEMO_MESSAGES, DEMO_USER_ID } from '@/lib/demo-data'
+import { DEMO_MATCHES, ALL_PROFILES, DEMO_MESSAGES, DEMO_USER_ID } from '@/lib/demo-data'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 export default function DemoChatListPage() {
-  const profileMap = new Map(MATCHED_PROFILES.map((p) => [p.user_id, p]))
+  const profileMap = new Map(ALL_PROFILES.map((p) => [p.user_id, p]))
 
   return (
     <div className="min-h-screen">

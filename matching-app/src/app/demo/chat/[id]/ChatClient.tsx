@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import {
   DEMO_MATCHES,
-  MATCHED_PROFILES,
+  ALL_PROFILES,
   DEMO_MESSAGES,
   DEMO_USER_ID,
   DEMO_USER,
@@ -63,7 +63,7 @@ function groupByDate(messages: DemoMessage[]): Record<string, DemoMessage[]> {
 export default function ChatClient({ matchId }: { matchId: string }) {
   const match = DEMO_MATCHES.find((m) => m.id === matchId)
   const partnerId = match ? (match.user1_id === DEMO_USER_ID ? match.user2_id : match.user1_id) : null
-  const partner = MATCHED_PROFILES.find((p) => p.user_id === partnerId)
+  const partner = ALL_PROFILES.find((p) => p.user_id === partnerId)
 
   const isFirstMessage = (DEMO_MESSAGES[matchId] ?? []).length === 0
   const [messages, setMessages] = useState<DemoMessage[]>(DEMO_MESSAGES[matchId] ?? [])
