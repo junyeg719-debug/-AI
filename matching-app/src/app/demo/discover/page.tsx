@@ -24,7 +24,14 @@ const SORT_TABS = [
 
 const ALL_BROWSE = [...MATCHED_PROFILES, ...CANDIDATE_PROFILES]
 
-const FILTER_LOCATIONS = ['滋賀県', '大阪府', '京都府', '奈良県']
+const REGIONS = [
+  { label: '北海道・東北', prefs: ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
+  { label: '関東', prefs: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
+  { label: '中部', prefs: ['新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] },
+  { label: '近畿', prefs: ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] },
+  { label: '中国・四国', prefs: ['鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県'] },
+  { label: '九州・沖縄', prefs: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] },
+]
 
 const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FFEAA7', '#DDA0DD']
 
@@ -387,11 +394,11 @@ function FilterSheet({
 
         {/* Location */}
         <div className="mb-7">
-          <label className="text-sm font-semibold text-gray-700 block mb-3">お住まいのエリア</label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-semibold text-gray-700">お住まいのエリア</label>
             <button
               onClick={() => setLocal(p => ({ ...p, locations: [] }))}
-              className="px-4 py-2 rounded-full text-sm border-2 transition-all font-medium"
+              className="px-3 py-1 rounded-full text-xs border-2 font-medium transition-all"
               style={{
                 borderColor: local.locations.length === 0 ? '#7E2841' : '#E5E7EB',
                 background: local.locations.length === 0 ? '#7E2841' : 'white',
@@ -400,21 +407,28 @@ function FilterSheet({
             >
               すべて
             </button>
-            {FILTER_LOCATIONS.map(loc => (
-              <button
-                key={loc}
-                onClick={() => toggleLocation(loc)}
-                className="px-4 py-2 rounded-full text-sm border-2 transition-all font-medium"
-                style={{
-                  borderColor: local.locations.includes(loc) ? '#7E2841' : '#E5E7EB',
-                  background: local.locations.includes(loc) ? '#7E2841' : 'white',
-                  color: local.locations.includes(loc) ? 'white' : '#374151',
-                }}
-              >
-                {loc.replace('県', '').replace('府', '').replace('都', '')}
-              </button>
-            ))}
           </div>
+          {REGIONS.map(region => (
+            <div key={region.label} className="mb-3">
+              <p className="text-[11px] font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{region.label}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {region.prefs.map(loc => (
+                  <button
+                    key={loc}
+                    onClick={() => toggleLocation(loc)}
+                    className="px-2.5 py-1 rounded-full text-xs border transition-all font-medium"
+                    style={{
+                      borderColor: local.locations.includes(loc) ? '#7E2841' : '#E5E7EB',
+                      background: local.locations.includes(loc) ? '#7E2841' : 'white',
+                      color: local.locations.includes(loc) ? 'white' : '#374151',
+                    }}
+                  >
+                    {loc.replace('県', '').replace('府', '').replace('都', '').replace('道', '')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Online only */}

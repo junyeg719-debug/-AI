@@ -2,6 +2,8 @@
 // 魅力マッチ — デモ用モックデータ
 // ============================================================
 
+import { FEMALE_PROFILES } from './female-profiles'
+
 export interface DemoProfile {
   id: string
   user_id: string
@@ -191,6 +193,7 @@ export const CANDIDATE_PROFILES: DemoProfile[] = [
     emoji: '🦆', color: 'from-cyan-300 to-sky-400',
     likeCount: 28, photoCount: 2, matchPercent: 74, isOnline: true, isVerified: false,
   },
+  ...FEMALE_PROFILES,
 ]
 
 // ──────────────────────────────────────────────
