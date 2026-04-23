@@ -122,7 +122,7 @@ export default function DemoFootprintsPage() {
                 {/* Profile info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">
-                    {fp.profile.age}歳 {fp.profile.location.replace('府', '').replace('県', '').replace('都', '')}
+                    {fp.profile.age}歳 {fp.profile.location.replace(/[都府県]$/, '')}
                   </p>
                   <p className="text-xs text-gray-400">
                     {fp.profile.height}cm {fp.profile.occupation || '−'}

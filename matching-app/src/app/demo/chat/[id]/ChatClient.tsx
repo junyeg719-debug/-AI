@@ -20,7 +20,7 @@ type CommonTag = { icon: string; label: string }
 
 function getCommonTags(partner: { interests: string[]; location: string; smoking: string; drinking?: string; holiday?: string }): CommonTag[] {
   const tags: CommonTag[] = []
-  if (partner.location === DEMO_USER.location) tags.push({ icon: '📍', label: partner.location.replace('県', '').replace('府', '').replace('都', '') })
+  if (partner.location === DEMO_USER.location) tags.push({ icon: '📍', label: partner.location.replace(/[都府県]$/, '') })
   if (partner.holiday && partner.holiday === DEMO_USER.holiday) tags.push({ icon: '🗓', label: partner.holiday })
   if (partner.drinking && partner.drinking === DEMO_USER.drinking) tags.push({ icon: '🍺', label: partner.drinking })
   if (partner.smoking === DEMO_USER.smoking) tags.push({ icon: '🚬', label: partner.smoking })

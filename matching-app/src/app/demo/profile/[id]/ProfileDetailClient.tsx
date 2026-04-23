@@ -110,7 +110,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
             <span className="text-lg text-gray-500">
-              {profile.age}歳 / {profile.location.replace('県','').replace('府','').replace('都','')}
+              {profile.age}歳 / {profile.location.replace(/[都府県]$/, '')}
             </span>
             {profile.isVerified && <CheckCircle className="w-5 h-5 text-blue-500" />}
           </div>
@@ -214,7 +214,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
                 </div>
                 <div>
                   <p className="text-sm font-bold text-gray-900">{profile.name}</p>
-                  <p className="text-xs text-gray-400">{profile.age}歳 · {profile.location.replace('県','').replace('府','').replace('都','')}</p>
+                  <p className="text-xs text-gray-400">{profile.age}歳 · {profile.location.replace(/[都府県]$/, '')}</p>
                 </div>
               </div>
               <button onClick={() => setShowCommentModal(false)} className="p-1.5 rounded-full bg-gray-100">

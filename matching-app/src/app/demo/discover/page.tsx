@@ -225,7 +225,7 @@ export default function DemoDiscoverPage() {
             ) : null}
             {filters.locations.map(loc => (
               <span key={loc} className="text-xs px-3 py-1 rounded-full border flex items-center gap-1" style={{ borderColor: '#7E2841', color: '#7E2841', background: '#FDF0F3' }}>
-                {loc.replace('県', '').replace('府', '').replace('都', '')}
+                {loc.replace(/[都府県]$/, '')}
               </span>
             ))}
             {filters.onlineOnly && (
@@ -423,7 +423,7 @@ function FilterSheet({
                       color: local.locations.includes(loc) ? 'white' : '#374151',
                     }}
                   >
-                    {loc.replace('県', '').replace('府', '').replace('都', '').replace('道', '')}
+                    {loc.replace(/[都府県]$/, '')}
                   </button>
                 ))}
               </div>
@@ -498,7 +498,7 @@ function LikeModal({
           </div>
           <p className="text-lg font-bold text-gray-900">{profile.name}さん</p>
           <p className="text-sm text-gray-400 mt-0.5">
-            {profile.age}歳 · {profile.location.replace('県', '').replace('府', '').replace('都', '')}
+            {profile.age}歳 · {profile.location.replace(/[都府県]$/, '')}
           </p>
           {LIKED_ME_PROFILE_IDS.has(profile.id) && (
             <span
@@ -676,7 +676,7 @@ function ProfileCard({
             <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
           )}
           <span className="text-[13px] font-semibold text-gray-800 truncate">
-            {profile.age}歳 {profile.location.replace('府', '').replace('県', '').replace('都', '')}
+            {profile.age}歳 {profile.location.replace(/[都府県]$/, '')}
           </span>
           {profile.isVerified && (
             <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#3B82F6' }} />

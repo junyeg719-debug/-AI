@@ -161,7 +161,7 @@ function LikeCard({
           )}
           <span className="text-[13px] font-semibold text-gray-800 truncate">
             {profile.age}歳{' '}
-            {profile.location.replace('府', '').replace('県', '').replace('都', '')}
+            {profile.location.replace(/[都府県]$/, '')}
           </span>
           {profile.isVerified && !isBlurred && (
             <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 text-blue-500" />

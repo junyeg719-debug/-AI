@@ -61,7 +61,7 @@ export default function DemoChatListPage() {
                   <p className="font-semibold text-gray-900 text-sm">
                     {partner.name}{'　'}
                     <span className="font-normal text-xs text-gray-400">
-                      {partner.age}歳 {partner.location.replace('府', '').replace('県', '').replace('都', '')}
+                      {partner.age}歳 {partner.location.replace(/[都府県]$/, '')}
                     </span>
                   </p>
                   {lastMsg && (
