@@ -63,14 +63,6 @@ export default function ProfileDashboard() {
         <p className="text-base font-bold text-gray-900">
           {nickname || <span className="text-gray-400 font-normal text-sm">名前を設定する</span>}
         </p>
-
-        {/* Edit profile button */}
-        <Link
-          href="/demo/profile/edit"
-          className="px-6 py-2 rounded-full border-2 border-gray-800 font-bold text-gray-800 text-sm active:bg-gray-50 transition"
-        >
-          ✏️ プロフィールを設定
-        </Link>
       </div>
 
       {/* ── Stats cards (Pairs style) ── */}
