@@ -7,6 +7,17 @@ const KEYS = {
   messages: (matchId: string) => `mk_messages_${matchId}`,
   userProfile: 'mk_user_profile',
   userBio: 'mk_user_bio',
+  userAvatar: 'mk_user_avatar',
+  userPhotos: 'mk_user_photos',
+}
+
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+  })
 }
 
 function get<T>(key: string, fallback: T): T {
@@ -53,4 +64,10 @@ export const storage = {
 
   getUserBio: (fallback: string) => get<string>(KEYS.userBio, fallback),
   setUserBio: (bio: string) => set(KEYS.userBio, bio),
+
+  getUserAvatar: () => get<string | null>(KEYS.userAvatar, null),
+  setUserAvatar: (base64: string) => set(KEYS.userAvatar, base64),
+
+  getUserPhotos: () => get<(string | null)[]>(KEYS.userPhotos, Array(6).fill(null)),
+  setUserPhotos: (photos: (string | null)[]) => set(KEYS.userPhotos, photos),
 }

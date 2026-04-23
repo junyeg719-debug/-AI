@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User } from 'lucide-react'
 import { DEMO_USER } from '@/lib/demo-data'
 import { useLikes } from '@/lib/likes-context'
+import { storage, fileToBase64 } from '@/lib/storage'
 
 const MENU_ROWS = [
   [
@@ -29,11 +30,18 @@ export default function ProfileDashboard() {
   const [photo, setPhoto] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const saved = storage.getUserAvatar()
+    if (saved) setPhoto(saved)
+  }, [])
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setPhoto(URL.createObjectURL(file))
     e.target.value = ''
+    const base64 = await fileToBase64(file)
+    setPhoto(base64)
+    storage.setUserAvatar(base64)
   }
 
   return (

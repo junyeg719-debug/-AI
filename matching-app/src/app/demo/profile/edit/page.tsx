@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronRight, Camera, X, Check, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { DEMO_USER } from '@/lib/demo-data'
-import { storage } from '@/lib/storage'
+import { storage, fileToBase64 } from '@/lib/storage'
 
 type FieldType = 'select' | 'multiselect' | 'text' | 'number'
 type AnyField = { key: string; label: string; type: FieldType; options?: string[]; placeholder?: string; min?: number; max?: number; unit?: string }
@@ -147,15 +147,21 @@ export default function ProfileEditPage() {
     if (savedProfile) setValues(prev => ({ ...prev, ...savedProfile }))
     const savedBio = storage.getUserBio('')
     if (savedBio) setBio(savedBio)
+    const savedPhotos = storage.getUserPhotos()
+    if (savedPhotos.some(Boolean)) setPhotos(savedPhotos)
   }, [])
 
   const openPhotoPicker = (idx: number) => { setActivePhotoIdx(idx); fileRef.current?.click() }
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setPhotos(prev => prev.map((p, i) => i === activePhotoIdx ? url : p))
     e.target.value = ''
+    const base64 = await fileToBase64(file)
+    setPhotos(prev => {
+      const next = prev.map((p, i) => i === activePhotoIdx ? base64 : p)
+      storage.setUserPhotos(next)
+      return next
+    })
   }
   const handleSave = () => {
     storage.setUserProfile(values)
