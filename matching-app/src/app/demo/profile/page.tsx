@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, Pencil, User } from 'lucide-react'
-import { DEMO_USER } from '@/lib/demo-data'
+import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, User, Plus, Store, Zap } from 'lucide-react'
 import { useLikes } from '@/lib/likes-context'
-import { storage, fileToBase64 } from '@/lib/storage'
+import { storage } from '@/lib/storage'
 
 const MENU_ROWS = [
   [
@@ -14,7 +13,7 @@ const MENU_ROWS = [
     { icon: ThumbsUp, label: '自分から', badge: null },
   ],
   [
-    { icon: Award, label: 'Omiaiポイント', badge: null },
+    { icon: Award, label: '魅力マッチポイント', badge: null },
     { icon: Gem, label: '有料会員', badge: null },
     { icon: Gem, label: 'プレミアムパック', badge: null },
   ],
@@ -28,61 +27,109 @@ const MENU_ROWS = [
 export default function ProfileDashboard() {
   const { remaining } = useLikes()
   const [photo, setPhoto] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [nickname, setNickname] = useState('')
 
   useEffect(() => {
     const saved = storage.getUserAvatar()
     if (saved) setPhoto(saved)
+    const profile = storage.getUserProfile()
+    if (profile?.nickname) setNickname(profile.nickname as string)
   }, [])
-
-  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    const base64 = await fileToBase64(file)
-    setPhoto(base64)
-    storage.setUserAvatar(base64)
-  }
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Top: avatar + button */}
-      <div className="px-5 pt-14 pb-5 flex items-center gap-4">
-        <button onClick={() => fileRef.current?.click()} className="relative flex-shrink-0">
-          {photo
-            ? <img src={photo} alt="avatar" className="w-20 h-20 rounded-full object-cover border border-gray-200" />
-            : <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="w-12 h-12 text-gray-400" />
-              </div>
-          }
-          <div className="absolute bottom-0.5 right-0.5 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow border border-gray-200">
-            <Pencil className="w-3 h-3 text-gray-500" />
+      {/* ── Hero: avatar + name ── */}
+      <div className="pt-14 pb-5 flex flex-col items-center gap-3">
+        <Link href="/demo/profile/photos" className="relative">
+          <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow-sm">
+            {photo
+              ? <img src={photo} alt="avatar" className="w-full h-full object-cover" />
+              : <User className="w-16 h-16 text-gray-300" />
+            }
           </div>
-        </button>
+          {/* Teal edit badge */}
+          <div
+            className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md"
+            style={{ background: '#5BC0C0' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </div>
+        </Link>
 
-        <Link href="/demo/profile/edit"
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border-2 border-gray-800 font-bold text-gray-800 text-sm active:bg-gray-50 transition">
+        {/* Name */}
+        <p className="text-base font-bold text-gray-900">
+          {nickname || <span className="text-gray-400 font-normal text-sm">名前を設定する</span>}
+        </p>
+
+        {/* Edit profile button */}
+        <Link
+          href="/demo/profile/edit"
+          className="px-6 py-2 rounded-full border-2 border-gray-800 font-bold text-gray-800 text-sm active:bg-gray-50 transition"
+        >
           ✏️ プロフィールを設定
         </Link>
       </div>
 
-      {/* Stats row */}
-      <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100">
-        <Link href="/demo/membership/status" className="flex-1 py-4 text-center active:bg-gray-50 transition">
-          <p className="text-[11px] text-gray-400 mb-1">会員ステータス</p>
-          <p className="text-sm font-bold text-blue-500">無料会員</p>
+      {/* ── Stats cards (Pairs style) ── */}
+      <div className="flex px-4 gap-2 mb-2">
+        {/* いいね */}
+        <Link href="/demo/membership/status" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative active:bg-gray-100 transition">
+          <button
+            onClick={e => e.preventDefault()}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center"
+          >
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
+          <ThumbsUp className="w-7 h-7" style={{ color: '#5BC0C0', fill: '#5BC0C0' }} />
+          <span className="text-lg font-bold text-gray-900 leading-none">{remaining}</span>
         </Link>
-        <div className="flex-1 py-4 text-center">
-          <p className="text-[11px] text-gray-400 mb-1">残いいね！数</p>
-          <p className="text-sm font-bold text-gray-800">👍 {remaining}</p>
+
+        {/* スペシャルいいね */}
+        <div className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative">
+          <button className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
+          <Zap className="w-7 h-7" style={{ color: '#FF6B35', fill: '#FF6B35' }} />
+          <span className="text-lg font-bold text-gray-900 leading-none">0</span>
         </div>
-        <Link href="/demo/points" className="flex-1 py-4 text-center active:bg-gray-50 transition">
-          <p className="text-[11px] text-gray-400 mb-1">残ポイント数</p>
-          <p className="text-sm font-bold text-gray-800">🪙 0</p>
+
+        {/* ポイント */}
+        <Link href="/demo/points" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative active:bg-gray-100 transition">
+          <button
+            onClick={e => e.preventDefault()}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center"
+          >
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
+          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#F5A623' }}>
+            <span className="text-white text-xs font-black">P</span>
+          </div>
+          <span className="text-lg font-bold text-gray-900 leading-none">0</span>
+        </Link>
+
+        {/* ストア */}
+        <Link href="/demo/points" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 active:bg-gray-100 transition">
+          <Store className="w-7 h-7" style={{ color: '#5BC0C0' }} />
+          <span className="text-sm font-bold text-gray-900 leading-none">ストア</span>
         </Link>
       </div>
 
-      {/* Icon grid */}
+      {/* ── 会員ステータス row ── */}
+      <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100 mx-0 mb-2">
+        <Link href="/demo/membership/status" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
+          <p className="text-[11px] text-gray-400 mb-0.5">会員ステータス</p>
+          <p className="text-sm font-bold text-blue-500">無料会員</p>
+        </Link>
+        <Link href="/demo/membership/plan" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
+          <p className="text-[11px] text-gray-400 mb-0.5">有料会員プラン</p>
+          <p className="text-sm font-bold" style={{ color: '#7E2841' }}>詳細を見る</p>
+        </Link>
+      </div>
+
+      {/* ── Icon grid ── */}
       <div className="py-2">
         {MENU_ROWS.map((row, ri) => (
           <div key={ri} className="flex border-b border-gray-50">
@@ -107,7 +154,7 @@ export default function ProfileDashboard() {
         ))}
       </div>
 
-      {/* Banners */}
+      {/* ── Banners ── */}
       <div className="px-4 pt-4 flex gap-3">
         <Link href="/demo/membership/plan" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a73e8, #0d47a1)' }}>
           有料会員プラン
@@ -119,8 +166,8 @@ export default function ProfileDashboard() {
         </Link>
       </div>
 
-      {/* Instagram link */}
-      <div className="px-4 pt-3 pb-4">
+      {/* ── External links ── */}
+      <div className="px-4 pt-3 pb-6">
         <a
           href="https://www.instagram.com/motesnap_?igsh=cm84bml5OHFncnI2"
           target="_blank"
@@ -137,9 +184,7 @@ export default function ProfileDashboard() {
             <p className="text-white font-bold text-sm">@motesnap_</p>
             <p className="text-white/80 text-xs mt-0.5">Instagramをフォローする</p>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </a>
 
         <a
@@ -150,8 +195,7 @@ export default function ProfileDashboard() {
         >
           <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f9ce34, #f5a623)' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
             </svg>
           </div>
@@ -159,13 +203,9 @@ export default function ProfileDashboard() {
             <p className="font-bold text-sm text-gray-800">mote-snap.com</p>
             <p className="text-gray-400 text-xs mt-0.5">公式サイトを見る</p>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </a>
       </div>
-
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
     </div>
   )
 }
