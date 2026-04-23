@@ -112,8 +112,10 @@ export default function DemoDiscoverPage() {
     setPendingLike(null)
     decrement()
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
-      setMatchId(MATCH_ID_BY_PROFILE_ID[profile.id])
+      const mid = MATCH_ID_BY_PROFILE_ID[profile.id]
+      setMatchId(mid)
       setMatchedProfile(profile)
+      storage.addMatch(mid, profile.user_id)
     }
   }
 

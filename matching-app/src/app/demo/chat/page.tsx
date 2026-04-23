@@ -1,13 +1,31 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SlidersHorizontal, User } from 'lucide-react'
-import { DEMO_MATCHES, ALL_PROFILES, DEMO_MESSAGES, DEMO_USER_ID } from '@/lib/demo-data'
+import { DEMO_MATCHES, ALL_PROFILES, DEMO_MESSAGES, DEMO_USER_ID, type DemoMessage } from '@/lib/demo-data'
+import { storage } from '@/lib/storage'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 export default function DemoChatListPage() {
   const profileMap = new Map(ALL_PROFILES.map((p) => [p.user_id, p]))
+  const [msgMap, setMsgMap] = useState<Record<string, DemoMessage[]>>(() => {
+    const m: Record<string, DemoMessage[]> = {}
+    for (const match of DEMO_MATCHES) {
+      m[match.id] = DEMO_MESSAGES[match.id] ?? []
+    }
+    return m
+  })
+
+  useEffect(() => {
+    const m: Record<string, DemoMessage[]> = {}
+    for (const match of DEMO_MATCHES) {
+      const stored = storage.getMessages(match.id) as DemoMessage[]
+      m[match.id] = stored.length > 0 ? stored : (DEMO_MESSAGES[match.id] ?? [])
+    }
+    setMsgMap(m)
+  }, [])
 
   return (
     <div className="min-h-screen">
@@ -29,7 +47,7 @@ export default function DemoChatListPage() {
           const partner = profileMap.get(partnerId)
           if (!partner) return null
 
-          const messages = DEMO_MESSAGES[match.id] ?? []
+          const messages = msgMap[match.id] ?? []
           const lastMsg = messages[messages.length - 1]
           const unread = messages.filter(
             (m) => !m.is_read && m.sender_id !== DEMO_USER_ID,
@@ -77,11 +95,7 @@ export default function DemoChatListPage() {
                   <p className="text-sm text-gray-500 truncate">
                     {noMessages
                       ? 'メッセージ交換をしていません'
-                      : lastMsg
-                        ? lastMsg.sender_id === DEMO_USER_ID
-                          ? lastMsg.content
-                          : lastMsg.content
-                        : 'メッセージ交換をしていません'}
+                      : lastMsg?.content ?? 'メッセージ交換をしていません'}
                   </p>
                   {unread > 0 && (
                     <span

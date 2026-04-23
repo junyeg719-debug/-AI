@@ -1,6 +1,9 @@
+export type StoredMatch = { matchId: string; userId: string; matchedAt: string }
+
 const KEYS = {
   remainingLikes: 'mk_remaining_likes',
   likedIds: 'mk_liked_ids',
+  matches: 'mk_matches',
   messages: (matchId: string) => `mk_messages_${matchId}`,
   userProfile: 'mk_user_profile',
   userBio: 'mk_user_bio',
@@ -32,6 +35,14 @@ export const storage = {
   addLikedId: (id: string) => {
     const ids = get<string[]>(KEYS.likedIds, [])
     if (!ids.includes(id)) set(KEYS.likedIds, [...ids, id])
+  },
+
+  getMatches: () => get<StoredMatch[]>(KEYS.matches, []),
+  addMatch: (matchId: string, userId: string) => {
+    const matches = get<StoredMatch[]>(KEYS.matches, [])
+    if (!matches.find(m => m.matchId === matchId)) {
+      set(KEYS.matches, [...matches, { matchId, userId, matchedAt: new Date().toISOString() }])
+    }
   },
 
   getMessages: (matchId: string) => get<unknown[]>(KEYS.messages(matchId), []),

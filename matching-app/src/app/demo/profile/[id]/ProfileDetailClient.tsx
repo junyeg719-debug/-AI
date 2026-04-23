@@ -41,6 +41,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
     const mid = MATCH_ID_BY_PROFILE_ID[profile.id] ?? 'match-006'
     setMatchId(mid)
     setMatchedProfile(profile)
+    storage.addMatch(mid, profile.user_id)
   }
 
   const handleLike = () => {

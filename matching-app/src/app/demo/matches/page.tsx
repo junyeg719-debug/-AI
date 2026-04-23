@@ -25,6 +25,7 @@ export default function DemoLikesPage() {
     setMatchedProfile(profile)
     decrement()
     storage.addLikedId(profile.id)
+    storage.addMatch(mid, profile.user_id)
   }
 
   return (
