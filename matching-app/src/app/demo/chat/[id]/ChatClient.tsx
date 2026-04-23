@@ -13,6 +13,7 @@ import {
   DEMO_USER,
   type DemoMessage,
 } from '@/lib/demo-data'
+import { storage } from '@/lib/storage'
 
 const FIRST_MSG_TEMPLATE = 'はじめまして！プロフィール拝見して、共通点がありそうだと思っていいねしました😊 ぜひお話しできたら嬉しいです。よろしくお願いします！'
 
@@ -65,13 +66,22 @@ export default function ChatClient({ matchId }: { matchId: string }) {
   const partnerId = match ? (match.user1_id === DEMO_USER_ID ? match.user2_id : match.user1_id) : null
   const partner = ALL_PROFILES.find((p) => p.user_id === partnerId)
 
-  const isFirstMessage = (DEMO_MESSAGES[matchId] ?? []).length === 0
-  const [messages, setMessages] = useState<DemoMessage[]>(DEMO_MESSAGES[matchId] ?? [])
+  const seedMessages = DEMO_MESSAGES[matchId] ?? []
+  const isFirstMessage = seedMessages.length === 0
+  const [messages, setMessages] = useState<DemoMessage[]>(seedMessages)
   const [input, setInput] = useState(isFirstMessage ? FIRST_MSG_TEMPLATE : '')
   const [partnerTyping, setPartnerTyping] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [hasSentFirst, setHasSentFirst] = useState(!isFirstMessage)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const stored = storage.getMessages(matchId) as DemoMessage[]
+    if (stored.length > 0) {
+      setMessages(stored)
+      setHasSentFirst(true)
+    }
+  }, [matchId])
 
   const lastPartnerMsg = messages.filter((m) => m.sender_id !== DEMO_USER_ID).at(-1)?.content ?? ''
   const aiSuggestions = partner ? getAiSuggestions(partner.name, partner.interests, lastPartnerMsg) : []
@@ -91,12 +101,22 @@ export default function ChatClient({ matchId }: { matchId: string }) {
     setInput('')
     setShowAiPanel(false)
     setHasSentFirst(true)
-    setMessages((prev) => [...prev, { id: `msg-${Date.now()}`, match_id: matchId, sender_id: DEMO_USER_ID, content: text, is_read: false, created_at: new Date().toISOString() }])
+    const newMsg: DemoMessage = { id: `msg-${Date.now()}`, match_id: matchId, sender_id: DEMO_USER_ID, content: text, is_read: false, created_at: new Date().toISOString() }
+    setMessages(prev => {
+      const next = [...prev, newMsg]
+      storage.setMessages(matchId, next)
+      return next
+    })
     setPartnerTyping(true)
     const replies = ['そうなんですね！✨', 'それは楽しそうですね😊', 'ぜひ聞かせてください！', 'なるほど、私もそう思います！', `${partner.interests[0]}もいいですよね〜`, '今度一緒に行きませんか？']
     setTimeout(() => {
       setPartnerTyping(false)
-      setMessages((prev) => [...prev, { id: `reply-${Date.now()}`, match_id: matchId, sender_id: partner.user_id, content: replies[Math.floor(Math.random() * replies.length)], is_read: true, created_at: new Date().toISOString() }])
+      const replyMsg: DemoMessage = { id: `reply-${Date.now()}`, match_id: matchId, sender_id: partner.user_id, content: replies[Math.floor(Math.random() * replies.length)], is_read: true, created_at: new Date().toISOString() }
+      setMessages(prev => {
+        const next = [...prev, replyMsg]
+        storage.setMessages(matchId, next)
+        return next
+      })
     }, 1200 + Math.random() * 800)
   }
 

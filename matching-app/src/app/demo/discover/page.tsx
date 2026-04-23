@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SlidersHorizontal, Camera, CheckCircle, Heart, User, X } from 'lucide-react'
@@ -12,6 +12,7 @@ import {
   type DemoProfile,
 } from '@/lib/demo-data'
 import { useLikes } from '@/lib/likes-context'
+import { storage } from '@/lib/storage'
 
 // ── Constants ──────────────────────────────────
 const SORT_TABS = [
@@ -83,6 +84,11 @@ export default function DemoDiscoverPage() {
   const { decrement } = useLikes()
   const [activeTab, setActiveTab] = useState('recommend')
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setLikedIds(new Set(storage.getLikedIds()))
+  }, [])
+
   const [filterOpen, setFilterOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER)
   const [pendingLike, setPendingLike] = useState<DemoProfile | null>(null)
@@ -98,7 +104,11 @@ export default function DemoDiscoverPage() {
   }
 
   const confirmLike = (profile: DemoProfile) => {
-    setLikedIds(prev => new Set([...prev, profile.id]))
+    setLikedIds(prev => {
+      const next = new Set([...prev, profile.id])
+      storage.setLikedIds([...next])
+      return next
+    })
     setPendingLike(null)
     decrement()
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {

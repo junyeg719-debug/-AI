@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ChevronRight, Camera, X, Check, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { DEMO_USER } from '@/lib/demo-data'
+import { storage } from '@/lib/storage'
 
 type FieldType = 'select' | 'multiselect' | 'text' | 'number'
 type AnyField = { key: string; label: string; type: FieldType; options?: string[]; placeholder?: string; min?: number; max?: number; unit?: string }
@@ -129,6 +130,8 @@ function ProfileRow({ field, value, onTap }: { field: AnyField; value: string | 
   )
 }
 
+const DEFAULT_BIO = 'はじめまして！\nプロフィールを見ていただき、ありがとうございます😊\n\n普段はエンジニアとして働いています。\n土日休みの仕事です。\n\n休みの日は、散歩や食べ歩きに行くことが多いです！\n\nよろしくお願いします！'
+
 export default function ProfileEditPage() {
   const [tab, setTab] = useState<'basic' | 'detail'>('basic')
   const [values, setValues] = useState<Record<string, string | string[]>>(INITIAL_VALUES)
@@ -136,8 +139,15 @@ export default function ProfileEditPage() {
   const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null))
   const [activePhotoIdx, setActivePhotoIdx] = useState(0)
   const [saved, setSaved] = useState(false)
-  const [bio, setBio] = useState('はじめまして！\nプロフィールを見ていただき、ありがとうございます😊\n\n普段はエンジニアとして働いています。\n土日休みの仕事です。\n\n休みの日は、散歩や食べ歩きに行くことが多いです！\n\nよろしくお願いします！')
+  const [bio, setBio] = useState(DEFAULT_BIO)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const savedProfile = storage.getUserProfile()
+    if (savedProfile) setValues(prev => ({ ...prev, ...savedProfile }))
+    const savedBio = storage.getUserBio('')
+    if (savedBio) setBio(savedBio)
+  }, [])
 
   const openPhotoPicker = (idx: number) => { setActivePhotoIdx(idx); fileRef.current?.click() }
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +158,8 @@ export default function ProfileEditPage() {
     e.target.value = ''
   }
   const handleSave = () => {
+    storage.setUserProfile(values)
+    storage.setUserBio(bio)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

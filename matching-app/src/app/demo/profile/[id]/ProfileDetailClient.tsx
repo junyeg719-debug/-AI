@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type DemoProfile, LIKED_ME_PROFILE_IDS, MATCH_ID_BY_PROFILE_ID } from '@/lib/demo-data'
 import { useLikes } from '@/lib/likes-context'
+import { storage } from '@/lib/storage'
 
 const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FFEAA7', '#DDA0DD']
 
@@ -13,6 +14,10 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
   const router = useRouter()
   const { decrement } = useLikes()
   const [liked, setLiked] = useState(false)
+
+  useEffect(() => {
+    if (storage.getLikedIds().includes(profile.id)) setLiked(true)
+  }, [profile.id])
   const [showStickyHeader, setShowStickyHeader] = useState(false)
   const [showCommentModal, setShowCommentModal] = useState(false)
   const [comment, setComment] = useState('')
@@ -42,6 +47,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
     if (liked) return
     setLiked(true)
     decrement()
+    storage.addLikedId(profile.id)
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
       triggerMatch()
     }
@@ -53,6 +59,7 @@ export default function ProfileDetailClient({ profile }: { profile: DemoProfile 
     if (!liked) {
       setLiked(true)
       decrement()
+      storage.addLikedId(profile.id)
       if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
         triggerMatch()
       }
