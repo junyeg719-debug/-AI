@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, User, Plus, Store, Zap, Camera, FileText, X } from 'lucide-react'
+import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, User, Plus, Store, Zap } from 'lucide-react'
 import { useLikes } from '@/lib/likes-context'
 import { storage } from '@/lib/storage'
 
@@ -27,10 +26,8 @@ const MENU_ROWS = [
 
 export default function ProfileDashboard() {
   const { remaining } = useLikes()
-  const router = useRouter()
   const [photo, setPhoto] = useState<string | null>(null)
   const [nickname, setNickname] = useState('')
-  const [showEditSheet, setShowEditSheet] = useState(false)
 
   useEffect(() => {
     const saved = storage.getUserAvatar()
@@ -43,7 +40,7 @@ export default function ProfileDashboard() {
     <div className="min-h-screen bg-white">
       {/* ── Hero: avatar + name ── */}
       <div className="pt-14 pb-5 flex flex-col items-center gap-3">
-        <button onClick={() => setShowEditSheet(true)} className="relative">
+        <Link href="/demo/profile/edit" className="relative">
           <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow-sm">
             {photo
               ? <img src={photo} alt="avatar" className="w-full h-full object-cover" />
@@ -60,51 +57,13 @@ export default function ProfileDashboard() {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
-        </button>
+        </Link>
 
         {/* Name */}
         <p className="text-base font-bold text-gray-900">
           {nickname || <span className="text-gray-400 font-normal text-sm">名前を設定する</span>}
         </p>
       </div>
-
-      {/* ── Edit bottom sheet ── */}
-      {showEditSheet && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowEditSheet(false)} />
-          {/* Sheet */}
-          <div className="relative bg-white rounded-t-3xl pb-8 pt-3 px-4 shadow-xl">
-            {/* Handle */}
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-            <p className="text-sm font-bold text-gray-700 mb-4 text-center">編集する</p>
-            <button
-              onClick={() => { setShowEditSheet(false); router.push('/demo/profile/photos') }}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 active:bg-gray-100 transition mb-3"
-            >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#5BC0C0' }}>
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-gray-900">写真を編集する</p>
-                <p className="text-xs text-gray-400 mt-0.5">プロフィール写真の追加・変更</p>
-              </div>
-            </button>
-            <button
-              onClick={() => { setShowEditSheet(false); router.push('/demo/profile/edit') }}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 active:bg-gray-100 transition"
-            >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#7E2841' }}>
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-gray-900">プロフィールを編集する</p>
-                <p className="text-xs text-gray-400 mt-0.5">名前・年齢・趣味などの情報</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Stats cards (Pairs style) ── */}
       <div className="flex px-4 gap-2 mb-2">
