@@ -238,9 +238,9 @@ export default function ProfileEditPage() {
           <X className="w-4 h-4 text-gray-600" />
         </button>
         <h1 className="text-base font-bold text-gray-900">プロフィール編集</h1>
-        <button className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#E8F8F8', color: '#5BC0C0' }}>
+        <Link href="/demo/profile/preview" className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#E8F8F8', color: '#5BC0C0' }}>
           プレビュー
-        </button>
+        </Link>
       </div>
 
       {/* ── Photos ── */}
