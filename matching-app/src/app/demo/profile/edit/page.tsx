@@ -95,12 +95,12 @@ function PickerSheet({ field, value, onClose, onSave }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
           <p className="font-bold text-gray-900 text-base">{field.label}</p>
-          <button onClick={() => { onSave(draft); onClose() }} className="font-bold text-sm" style={{ color: '#5BC0C0' }}>完了</button>
+          <button onClick={() => { onSave(draft); onClose() }} className="font-bold text-sm" style={{ color: '#A84060' }}>完了</button>
         </div>
         <div className="overflow-y-auto flex-1 px-4 py-3">
           {field.type === 'text' && (
             <input autoFocus className="w-full border rounded-xl px-4 py-3 text-sm focus:outline-none mt-2"
-              style={{ borderColor: '#5BC0C0' }} placeholder={field.placeholder ?? ''}
+              style={{ borderColor: '#A84060' }} placeholder={field.placeholder ?? ''}
               value={typeof draft === 'string' ? draft : ''}
               onChange={e => setDraft(e.target.value)} />
           )}
@@ -109,9 +109,9 @@ function PickerSheet({ field, value, onClose, onSave }: {
               {Array.from({ length: (field.max ?? 200) - (field.min ?? 140) + 1 }, (_, i) => String((field.min ?? 140) + i)).map(opt => (
                 <button key={opt} onClick={() => setDraft(opt)}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition"
-                  style={{ background: draft === opt ? '#E8F8F8' : 'transparent' }}>
+                  style={{ background: draft === opt ? '#F9EEF2' : 'transparent' }}>
                   <span className="text-sm">{opt}cm</span>
-                  {draft === opt && <Check className="w-4 h-4" style={{ color: '#5BC0C0' }} />}
+                  {draft === opt && <Check className="w-4 h-4" style={{ color: '#A84060' }} />}
                 </button>
               ))}
             </div>
@@ -124,9 +124,9 @@ function PickerSheet({ field, value, onClose, onSave }: {
                   <button key={opt}
                     onClick={() => field.type === 'multiselect' ? toggle(opt) : setDraft(opt)}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition"
-                    style={{ background: selected ? '#E8F8F8' : 'transparent' }}>
+                    style={{ background: selected ? '#F9EEF2' : 'transparent' }}>
                     <span className="text-sm text-gray-800">{opt}</span>
-                    {selected && <Check className="w-4 h-4" style={{ color: '#5BC0C0' }} />}
+                    {selected && <Check className="w-4 h-4" style={{ color: '#A84060' }} />}
                   </button>
                 )
               })}
@@ -146,7 +146,7 @@ function BioSheet({ bio, onSave, onClose }: { bio: string; onSave: (b: string) =
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
           <p className="font-bold text-gray-900 text-base">自己紹介文</p>
-          <button onClick={() => { onSave(draft); onClose() }} className="font-bold text-sm" style={{ color: '#5BC0C0' }}>完了</button>
+          <button onClick={() => { onSave(draft); onClose() }} className="font-bold text-sm" style={{ color: '#A84060' }}>完了</button>
         </div>
         <textarea
           autoFocus
@@ -170,7 +170,7 @@ function ProfileRow({ field, value, onTap }: { field: AnyField; value: string | 
       <span className="text-sm text-gray-700">{field.label}</span>
       <div className="flex items-center gap-0.5 max-w-[60%]">
         <span className="text-sm font-medium text-right truncate"
-          style={{ color: isSet ? '#5BC0C0' : '#F97316' }}>{text}</span>
+          style={{ color: isSet ? '#A84060' : '#F97316' }}>{text}</span>
         {arrow && <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />}
       </div>
     </button>
@@ -239,7 +239,7 @@ export default function ProfileEditPage() {
           <X className="w-4 h-4 text-gray-600" />
         </button>
         <h1 className="text-base font-bold text-gray-900">プロフィール編集</h1>
-        <button onClick={() => setShowPreview(true)} className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#E8F8F8', color: '#5BC0C0' }}>
+        <button onClick={() => setShowPreview(true)} className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#F9EEF2', color: '#A84060' }}>
           プレビュー
         </button>
       </div>
@@ -248,7 +248,7 @@ export default function ProfileEditPage() {
       <div className="bg-white px-4 pt-5 pb-5 mb-3">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-base text-gray-900">プロフィール写真</h3>
-          <Link href="/demo/profile/photos" className="text-sm font-medium" style={{ color: '#5BC0C0' }}>
+          <Link href="/demo/profile/photos" className="text-sm font-medium" style={{ color: '#A84060' }}>
             すべて見る
           </Link>
         </div>
@@ -297,7 +297,7 @@ export default function ProfileEditPage() {
                 : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
                     <span className="text-xs text-gray-500">{PHOTO_LABELS[idx]}</span>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#5BC0C0' }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#A84060' }}>
                       <Plus className="w-4 h-4 text-white" />
                     </div>
                   </div>
@@ -310,7 +310,7 @@ export default function ProfileEditPage() {
         {/* 写真を追加 button */}
         <button onClick={addNextPhoto}
           className="w-full py-3 rounded-full text-white font-bold text-sm active:opacity-80 transition"
-          style={{ background: '#5BC0C0' }}>
+          style={{ background: '#A84060' }}>
           写真を追加
         </button>
       </div>
@@ -362,7 +362,7 @@ export default function ProfileEditPage() {
       {showPreview && (
         <div className="fixed inset-0 z-[200] bg-white overflow-y-auto pb-24">
           {/* Banner */}
-          <div className="sticky top-0 z-10 text-center py-2 text-xs font-bold text-white" style={{ background: '#5BC0C0' }}>
+          <div className="sticky top-0 z-10 text-center py-2 text-xs font-bold text-white" style={{ background: '#A84060' }}>
             プレビュー — 相手にはこのように表示されます
           </div>
 
@@ -454,7 +454,7 @@ export default function ProfileEditPage() {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 max-w-md mx-auto">
             <button onClick={() => setShowPreview(false)}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-base"
-              style={{ background: 'linear-gradient(135deg, #5BC0C0, #3AADAD)' }}>
+              style={{ background: 'linear-gradient(135deg, #A84060, #8A3050)' }}>
               編集に戻る
             </button>
           </div>
