@@ -47,10 +47,10 @@ export default function ProfileDashboard() {
               : <User className="w-16 h-16 text-gray-300" />
             }
           </div>
-          {/* Teal edit badge */}
+          {/* Wine red edit badge */}
           <div
             className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md"
-            style={{ background: '#5BC0C0' }}
+            style={{ background: '#A84060' }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -75,7 +75,7 @@ export default function ProfileDashboard() {
           >
             <Plus className="w-3 h-3 text-gray-400" />
           </button>
-          <ThumbsUp className="w-7 h-7" style={{ color: '#5BC0C0', fill: '#5BC0C0' }} />
+          <ThumbsUp className="w-7 h-7" style={{ color: '#A84060', fill: '#A84060' }} />
           <span className="text-lg font-bold text-gray-900 leading-none">{remaining}</span>
         </Link>
 
@@ -104,7 +104,7 @@ export default function ProfileDashboard() {
 
         {/* ストア */}
         <Link href="/demo/points" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 active:bg-gray-100 transition">
-          <Store className="w-7 h-7" style={{ color: '#5BC0C0' }} />
+          <Store className="w-7 h-7" style={{ color: '#A84060' }} />
           <span className="text-sm font-bold text-gray-900 leading-none">ストア</span>
         </Link>
       </div>
@@ -113,7 +113,7 @@ export default function ProfileDashboard() {
       <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100 mx-0 mb-2">
         <Link href="/demo/membership/status" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-0.5">会員ステータス</p>
-          <p className="text-sm font-bold text-blue-500">無料会員</p>
+          <p className="text-sm font-bold" style={{ color: '#A84060' }}>無料会員</p>
         </Link>
         <Link href="/demo/membership/plan" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-0.5">有料会員プラン</p>
