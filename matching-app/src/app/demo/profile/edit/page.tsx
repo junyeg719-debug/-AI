@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronRight, X, Check, Plus, Pencil } from 'lucide-react'
+import { ChevronRight, X, Check, Plus, Pencil, User } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { storage, fileToBase64 } from '@/lib/storage'
@@ -185,6 +185,7 @@ export default function ProfileEditPage() {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0)
   const [activeField, setActiveField] = useState<AnyField | null>(null)
   const [showBioSheet, setShowBioSheet] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -238,9 +239,9 @@ export default function ProfileEditPage() {
           <X className="w-4 h-4 text-gray-600" />
         </button>
         <h1 className="text-base font-bold text-gray-900">プロフィール編集</h1>
-        <Link href="/demo/profile/preview" className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#E8F8F8', color: '#5BC0C0' }}>
+        <button onClick={() => setShowPreview(true)} className="px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: '#E8F8F8', color: '#5BC0C0' }}>
           プレビュー
-        </Link>
+        </button>
       </div>
 
       {/* ── Photos ── */}
@@ -355,6 +356,109 @@ export default function ProfileEditPage() {
           onClose={() => setActiveField(null)}
           onSave={val => { saveField(activeField.key, val); setActiveField(null) }}
         />
+      )}
+
+      {/* ── Preview modal ── */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[200] bg-white overflow-y-auto pb-24">
+          {/* Banner */}
+          <div className="sticky top-0 z-10 text-center py-2 text-xs font-bold text-white" style={{ background: '#5BC0C0' }}>
+            プレビュー — 相手にはこのように表示されます
+          </div>
+
+          {/* Hero photo */}
+          <div className="relative bg-gray-200" style={{ aspectRatio: '3/4' }}>
+            {photos[0]
+              ? <img src={photos[0]} className="w-full h-full object-cover" alt="" />
+              : <div className="w-full h-full flex items-center justify-center"><User className="w-32 h-32 text-gray-300" /></div>
+            }
+          </div>
+
+          {/* Name & info */}
+          <div className="px-4 pt-4 pb-3 bg-white">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {(values.nickname as string) || 'ニックネーム未設定'}
+            </h1>
+            <p className="mt-1 text-sm text-gray-400">👍 0 いいね！</p>
+          </div>
+
+          {/* Hobby/personality tags */}
+          {((values.personality as string[])?.length > 0 || (values.hobbies as string[])?.length > 0) && (
+            <div className="px-4 pb-4 bg-white flex flex-wrap gap-2">
+              {(values.personality as string[] ?? []).map(t => (
+                <span key={t} className="px-3 py-1.5 rounded-full border border-gray-300 text-sm text-gray-700">{t}</span>
+              ))}
+              {(values.hobbies as string[] ?? []).map(t => (
+                <span key={t} className="px-3 py-1.5 rounded-full border border-gray-300 text-sm text-gray-700">{t}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Bio */}
+          {bio && (
+            <div className="border-t border-gray-100">
+              <div className="px-4 py-3" style={{ background: '#F9F9F9' }}>
+                <h2 className="text-sm font-bold text-gray-700">自己紹介文</h2>
+              </div>
+              <div className="px-4 py-4 bg-white">
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{bio}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Profile fields */}
+          {(() => {
+            const fields: [string, string][] = [
+              ['身長', values.height ? `${values.height}cm` : ''],
+              ['体型', values.bodyType as string ?? ''],
+              ['タバコ', values.smoking as string ?? ''],
+              ['お酒', values.alcohol as string ?? ''],
+              ['休日', values.holiday as string ?? ''],
+              ['職種', values.jobType as string ?? ''],
+              ['学歴', values.education as string ?? ''],
+            ].filter(([, v]) => !!v) as [string, string][]
+            return fields.length > 0 ? (
+              <div className="border-t border-gray-100 mt-1">
+                <div className="px-4 py-3" style={{ background: '#F9F9F9' }}>
+                  <h2 className="text-sm font-bold text-gray-700">外見・内面</h2>
+                </div>
+                <div className="bg-white divide-y divide-gray-50">
+                  {fields.map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm text-gray-400">{label}</span>
+                      <span className="text-sm text-gray-800">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null
+          })()}
+
+          {/* Sub photos */}
+          {photos.slice(1).some(Boolean) && (
+            <div className="border-t border-gray-100 mt-1">
+              <div className="px-4 py-3" style={{ background: '#F9F9F9' }}>
+                <h2 className="text-sm font-bold text-gray-700">写真</h2>
+              </div>
+              <div className="px-4 py-4 grid grid-cols-3 gap-2">
+                {photos.slice(1).filter(Boolean).map((p, i) => (
+                  <div key={i} className="rounded-xl overflow-hidden" style={{ aspectRatio: '1' }}>
+                    <img src={p!} className="w-full h-full object-cover" alt="" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Close button */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 max-w-md mx-auto">
+            <button onClick={() => setShowPreview(false)}
+              className="w-full py-3.5 rounded-2xl font-bold text-white text-base"
+              style={{ background: 'linear-gradient(135deg, #5BC0C0, #3AADAD)' }}>
+              編集に戻る
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
