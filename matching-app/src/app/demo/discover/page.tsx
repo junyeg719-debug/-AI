@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SlidersHorizontal, Camera, CheckCircle, Heart, User, X } from 'lucide-react'
+import { FilterSheet } from './FilterSheet'
 import {
   CANDIDATE_PROFILES,
   MATCHED_PROFILES,
@@ -38,44 +39,72 @@ const CONFETTI_COLORS = ['#7E2841', '#F8A4C0', '#FFD700', '#FF6B6B', '#4ECDC4', 
 
 // ── Types ──────────────────────────────────────
 type FilterState = {
-  ageMin: number
-  ageMax: number
+  distanceSearch: boolean
   locations: string[]
-  onlineOnly: boolean
+  heightMin: number; heightMax: number
+  bodyTypes: string[]
+  ageMin: number; ageMax: number
+  jobTypes: string[]
+  incomeMin: number; incomeMax: number
+  holidays: string[]
+  educations: string[]
+  roommateTypes: string[]
+  smokingTypes: string[]
+  alcoholTypes: string[]
+  marriageTypes: string[]
+  childrenTypes: string[]
 }
 
-const DEFAULT_FILTER: FilterState = { ageMin: 20, ageMax: 45, locations: [], onlineOnly: false }
+const DEFAULT_FILTER: FilterState = {
+  distanceSearch: false, locations: [],
+  heightMin: 140, heightMax: 200,
+  bodyTypes: [], ageMin: 18, ageMax: 50,
+  jobTypes: [], incomeMin: 0, incomeMax: 5,
+  holidays: [], educations: [], roommateTypes: [],
+  smokingTypes: [], alcoholTypes: [], marriageTypes: [], childrenTypes: [],
+}
 
 // ── Helpers ────────────────────────────────────
 function sortProfiles(profiles: DemoProfile[], key: string): DemoProfile[] {
   switch (key) {
-    case 'likes':
-      return [...profiles].sort((a, b) => b.likeCount - a.likeCount)
-    case 'login':
-      return [...profiles].filter(p => p.isOnline).concat(profiles.filter(p => !p.isOnline))
-    case 'new':
-      return [...profiles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    default:
-      return profiles
+    case 'likes': return [...profiles].sort((a, b) => b.likeCount - a.likeCount)
+    case 'login': return [...profiles].filter(p => p.isOnline).concat(profiles.filter(p => !p.isOnline))
+    case 'new': return [...profiles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    default: return profiles
   }
 }
 
 function applyFilters(profiles: DemoProfile[], f: FilterState): DemoProfile[] {
   return profiles.filter(p => {
     if (p.age < f.ageMin || p.age > f.ageMax) return false
-    if (f.onlineOnly && !p.isOnline) return false
-    if (f.locations.length > 0 && !f.locations.includes(p.location)) return false
+    if (f.locations.length > 0) {
+      const loc = p.location.replace(/[都府県]$/, '')
+      if (!f.locations.some(l => p.location.includes(l) || loc === l.replace(/[都府県]$/, ''))) return false
+    }
+    if (f.heightMin > 140 || f.heightMax < 200) {
+      if (!p.height || p.height < f.heightMin || p.height > f.heightMax) return false
+    }
+    if (f.bodyTypes.length > 0 && !f.bodyTypes.includes(p.bodyType)) return false
+    if (f.smokingTypes.length > 0 && !f.smokingTypes.some(s => p.smoking === s)) return false
+    if (f.alcoholTypes.length > 0 && p.drinking) {
+      const map: Record<string,string> = { 'ときどき飲む': 'たまに飲む' }
+      if (!f.alcoholTypes.some(a => p.drinking === a || p.drinking === map[a])) return false
+    }
+    if (f.holidays.length > 0 && p.holiday) {
+      const map: Record<string,string[]> = { '土日': ['土日','土日休み'], '平日': ['平日','平日休み'], '不定期': ['シフト制','不定休'] }
+      if (!f.holidays.some(h => (map[h] ?? [h]).some(v => p.holiday!.includes(v)))) return false
+    }
+    if (f.jobTypes.length > 0 && !f.jobTypes.some(j => p.occupation.includes(j) || j.includes(p.occupation))) return false
     return true
   })
 }
 
 function hasActiveFilter(f: FilterState): boolean {
-  return (
-    f.ageMin !== DEFAULT_FILTER.ageMin ||
-    f.ageMax !== DEFAULT_FILTER.ageMax ||
-    f.locations.length > 0 ||
-    f.onlineOnly
-  )
+  return f.locations.length > 0 || f.bodyTypes.length > 0 || f.smokingTypes.length > 0 ||
+    f.alcoholTypes.length > 0 || f.holidays.length > 0 || f.jobTypes.length > 0 ||
+    f.educations.length > 0 || f.roommateTypes.length > 0 || f.marriageTypes.length > 0 ||
+    f.childrenTypes.length > 0 || f.ageMin !== 18 || f.ageMax !== 50 ||
+    f.heightMin !== 140 || f.heightMax !== 200
 }
 
 // ── Main page ──────────────────────────────────
@@ -230,21 +259,22 @@ export default function DemoDiscoverPage() {
       {isFiltered && (
         <div className="px-4 pb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            {filters.ageMin !== DEFAULT_FILTER.ageMin || filters.ageMax !== DEFAULT_FILTER.ageMax ? (
-              <span className="text-xs px-3 py-1 rounded-full border flex items-center gap-1" style={{ borderColor: '#7E2841', color: '#7E2841', background: '#FDF0F3' }}>
+            {(filters.ageMin !== 18 || filters.ageMax !== 50) && (
+              <span className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: '#5BC0C0', color: '#5BC0C0', background: '#E8F8F8' }}>
                 {filters.ageMin}〜{filters.ageMax}歳
               </span>
-            ) : null}
+            )}
             {filters.locations.map(loc => (
-              <span key={loc} className="text-xs px-3 py-1 rounded-full border flex items-center gap-1" style={{ borderColor: '#7E2841', color: '#7E2841', background: '#FDF0F3' }}>
+              <span key={loc} className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: '#5BC0C0', color: '#5BC0C0', background: '#E8F8F8' }}>
                 {loc.replace(/[都府県]$/, '')}
               </span>
             ))}
-            {filters.onlineOnly && (
-              <span className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: '#22c55e', color: '#16a34a', background: '#f0fdf4' }}>
-                オンライン中
-              </span>
-            )}
+            {filters.bodyTypes.map(b => (
+              <span key={b} className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: '#5BC0C0', color: '#5BC0C0', background: '#E8F8F8' }}>{b}</span>
+            ))}
+            {filters.smokingTypes.map(s => (
+              <span key={s} className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: '#5BC0C0', color: '#5BC0C0', background: '#E8F8F8' }}>{s}</span>
+            ))}
             <button
               onClick={() => setFilters(DEFAULT_FILTER)}
               className="text-xs text-gray-400 underline"
@@ -326,156 +356,6 @@ export default function DemoDiscoverPage() {
           50% { transform: scale(1.25); }
         }
       `}</style>
-    </div>
-  )
-}
-
-// ── Filter Sheet ───────────────────────────────
-function FilterSheet({
-  filters,
-  onApply,
-  onClose,
-}: {
-  filters: FilterState
-  onApply: (f: FilterState) => void
-  onClose: () => void
-}) {
-  const [local, setLocal] = useState<FilterState>(filters)
-
-  const toggleLocation = (loc: string) => {
-    setLocal(prev => ({
-      ...prev,
-      locations: prev.locations.includes(loc)
-        ? prev.locations.filter(l => l !== loc)
-        : [...prev.locations, loc],
-    }))
-  }
-
-  return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative bg-white rounded-t-3xl w-full max-w-md px-6 pt-5 pb-10 max-h-[85vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-        style={{ animation: 'matchCardIn 0.25s ease-out' }}
-      >
-        {/* Handle */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
-
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-gray-900">絞り込み</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 transition">
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Age range */}
-        <div className="mb-7">
-          <label className="text-sm font-semibold text-gray-700 block mb-3">年齢</label>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <input
-                type="number"
-                min={18}
-                max={local.ageMax}
-                value={local.ageMin}
-                onChange={e => setLocal(p => ({ ...p, ageMin: Math.min(Number(e.target.value), p.ageMax) }))}
-                className="w-full border-2 rounded-xl px-3 py-2.5 text-center text-sm font-medium outline-none transition-colors"
-                style={{ borderColor: '#E5E7EB' }}
-                onFocus={e => (e.target.style.borderColor = '#7E2841')}
-                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
-              />
-            </div>
-            <span className="text-gray-400 text-sm flex-shrink-0">〜</span>
-            <div className="relative flex-1">
-              <input
-                type="number"
-                min={local.ageMin}
-                max={60}
-                value={local.ageMax}
-                onChange={e => setLocal(p => ({ ...p, ageMax: Math.max(Number(e.target.value), p.ageMin) }))}
-                className="w-full border-2 rounded-xl px-3 py-2.5 text-center text-sm font-medium outline-none transition-colors"
-                style={{ borderColor: '#E5E7EB' }}
-                onFocus={e => (e.target.style.borderColor = '#7E2841')}
-                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
-              />
-            </div>
-            <span className="text-gray-500 text-sm flex-shrink-0">歳</span>
-          </div>
-        </div>
-
-        {/* Location */}
-        <div className="mb-7">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-semibold text-gray-700">お住まいのエリア</label>
-            <button
-              onClick={() => setLocal(p => ({ ...p, locations: [] }))}
-              className="px-3 py-1 rounded-full text-xs border-2 font-medium transition-all"
-              style={{
-                borderColor: local.locations.length === 0 ? '#7E2841' : '#E5E7EB',
-                background: local.locations.length === 0 ? '#7E2841' : 'white',
-                color: local.locations.length === 0 ? 'white' : '#374151',
-              }}
-            >
-              すべて
-            </button>
-          </div>
-          {REGIONS.map(region => (
-            <div key={region.label} className="mb-3">
-              <p className="text-[11px] font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{region.label}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {region.prefs.map(loc => (
-                  <button
-                    key={loc}
-                    onClick={() => toggleLocation(loc)}
-                    className="px-2.5 py-1 rounded-full text-xs border transition-all font-medium"
-                    style={{
-                      borderColor: local.locations.includes(loc) ? '#7E2841' : '#E5E7EB',
-                      background: local.locations.includes(loc) ? '#7E2841' : 'white',
-                      color: local.locations.includes(loc) ? 'white' : '#374151',
-                    }}
-                  >
-                    {loc.replace(/[都府県]$/, '')}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Online only */}
-        <div className="flex items-center justify-between mb-8 py-4 border-t border-b border-gray-50">
-          <div>
-            <p className="text-sm font-semibold text-gray-700">オンライン中のみ</p>
-            <p className="text-xs text-gray-400 mt-0.5">現在アクティブなメンバーを表示</p>
-          </div>
-          <button
-            onClick={() => setLocal(p => ({ ...p, onlineOnly: !p.onlineOnly }))}
-            className="w-12 h-6 rounded-full transition-all duration-200 flex-shrink-0 relative"
-            style={{ background: local.onlineOnly ? '#7E2841' : '#D1D5DB' }}
-          >
-            <span
-              className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200"
-              style={{ left: local.onlineOnly ? '26px' : '2px' }}
-            />
-          </button>
-        </div>
-
-        {/* Actions */}
-        <button
-          onClick={() => { onApply(local); onClose() }}
-          className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-sm"
-          style={{ background: 'linear-gradient(135deg, #7E2841, #A03558)' }}
-        >
-          適用する
-        </button>
-        <button
-          onClick={() => { const r = DEFAULT_FILTER; setLocal(r); onApply(r) }}
-          className="w-full py-3 text-sm text-gray-400 mt-1"
-        >
-          リセット
-        </button>
-      </div>
     </div>
   )
 }
