@@ -186,6 +186,7 @@ export default function ProfileEditPage() {
   const [activeField, setActiveField] = useState<AnyField | null>(null)
   const [showBioSheet, setShowBioSheet] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -195,21 +196,42 @@ export default function ProfileEditPage() {
     if (savedBio) setBio(savedBio)
     const savedPhotos = storage.getUserPhotos()
     if (savedPhotos.some(Boolean)) setPhotos(savedPhotos)
+    setIsLoaded(true)
   }, [])
 
+  useEffect(() => {
+    if (!isLoaded) return
+    storage.setUserPhotos(photos)
+    if (photos[0]) storage.setUserAvatar(photos[0])
+    else storage.setUserAvatar('')
+  }, [photos, isLoaded])
+
   const openPhotoPicker = (idx: number) => { setActivePhotoIdx(idx); fileRef.current?.click() }
+
+  const compressImage = (base64: string, maxPx = 900, quality = 0.82): Promise<string> =>
+    new Promise(resolve => {
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        if (width > maxPx || height > maxPx) {
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx }
+          else { width = Math.round(width * maxPx / height); height = maxPx }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width; canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.src = base64
+    })
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
-    const base64 = await fileToBase64(file)
-    setPhotos(prev => {
-      const next = prev.map((p, i) => i === activePhotoIdx ? base64 : p)
-      storage.setUserPhotos(next)
-      if (activePhotoIdx === 0) storage.setUserAvatar(base64)
-      return next
-    })
+    const raw = await fileToBase64(file)
+    const base64 = await compressImage(raw)
+    setPhotos(prev => prev.map((p, i) => i === activePhotoIdx ? base64 : p))
   }
 
   const addNextPhoto = () => {
