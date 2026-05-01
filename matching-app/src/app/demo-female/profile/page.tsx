@@ -1,6 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, User, Plus, Store, Zap } from 'lucide-react'
+import { useLikes } from '@/lib/likes-context'
 import { FEMALE_DEMO_USER } from '@/lib/female-demo-data'
 
 const MENU_ROWS = [
@@ -22,98 +25,98 @@ const MENU_ROWS = [
 ]
 
 export default function FemaleProfilePage() {
-  const profile = FEMALE_DEMO_USER
+  const { remaining } = useLikes()
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [nickname, setNickname] = useState('')
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('female_avatar')
+      if (saved) setPhoto(saved)
+      const saved_name = localStorage.getItem('female_nickname')
+      setNickname(saved_name ?? FEMALE_DEMO_USER.name)
+    } catch {
+      setNickname(FEMALE_DEMO_USER.name)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero */}
+      {/* ── Hero: avatar + name ── */}
       <div className="pt-14 pb-5 flex flex-col items-center gap-3">
         <div className="relative">
           <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow-sm">
-            {profile.avatar_url
-              ? <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+            {photo
+              ? <img src={photo} alt="avatar" className="w-full h-full object-cover" />
               : <User className="w-16 h-16 text-gray-300" />
             }
           </div>
-          <div className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md" style={{ background: '#A84060' }}>
+          <div
+            className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md"
+            style={{ background: '#A84060' }}
+          >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
         </div>
-        <p className="text-base font-bold text-gray-900">{profile.name}</p>
-        <span className="text-xs px-3 py-1 rounded-full font-bold text-white" style={{ background: '#A84060' }}>
-          女性ビュー
-        </span>
+        <p className="text-base font-bold text-gray-900">
+          {nickname || <span className="text-gray-400 font-normal text-sm">名前を設定する</span>}
+        </p>
       </div>
 
-      {/* Stats */}
+      {/* ── Stats cards ── */}
       <div className="flex px-4 gap-2 mb-2">
-        <div className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative">
+        {/* いいね */}
+        <Link href="/demo/membership/status" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative active:bg-gray-100 transition">
+          <button onClick={e => e.preventDefault()} className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
           <ThumbsUp className="w-7 h-7" style={{ color: '#A84060', fill: '#A84060' }} />
-          <span className="text-lg font-bold text-gray-900 leading-none">∞</span>
-          <span className="text-[10px] text-gray-400">いいね！</span>
-        </div>
+          <span className="text-lg font-bold text-gray-900 leading-none">{remaining}</span>
+        </Link>
+
+        {/* スペシャルいいね */}
         <div className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative">
+          <button className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
           <Zap className="w-7 h-7" style={{ color: '#FF6B35', fill: '#FF6B35' }} />
           <span className="text-lg font-bold text-gray-900 leading-none">0</span>
-          <span className="text-[10px] text-gray-400">スペシャル</span>
         </div>
-        <div className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative">
+
+        {/* ポイント */}
+        <Link href="/demo/points" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 relative active:bg-gray-100 transition">
+          <button onClick={e => e.preventDefault()} className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+            <Plus className="w-3 h-3 text-gray-400" />
+          </button>
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#F5A623' }}>
             <span className="text-white text-xs font-black">P</span>
           </div>
           <span className="text-lg font-bold text-gray-900 leading-none">0</span>
-          <span className="text-[10px] text-gray-400">ポイント</span>
-        </div>
-        <div className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1">
+        </Link>
+
+        {/* ストア */}
+        <Link href="/demo/points" className="flex-1 bg-gray-50 rounded-2xl pt-3 pb-2.5 px-1 flex flex-col items-center gap-1 active:bg-gray-100 transition">
           <Store className="w-7 h-7" style={{ color: '#A84060' }} />
           <span className="text-sm font-bold text-gray-900 leading-none">ストア</span>
-        </div>
+        </Link>
       </div>
 
-      {/* Membership */}
-      <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100 mb-2">
-        <div className="flex-1 py-3.5 text-center">
+      {/* ── 会員ステータス row ── */}
+      <div className="flex border-t border-b border-gray-100 divide-x divide-gray-100 mx-0 mb-2">
+        <Link href="/demo/membership/status" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
           <p className="text-[11px] text-gray-400 mb-0.5">会員ステータス</p>
-          <p className="text-sm font-bold" style={{ color: '#A84060' }}>女性会員（無料）</p>
-        </div>
-        <div className="flex-1 py-3.5 text-center">
-          <p className="text-[11px] text-gray-400 mb-0.5">プロフィール</p>
-          <p className="text-sm font-bold" style={{ color: '#A84060' }}>編集する</p>
-        </div>
+          <p className="text-sm font-bold" style={{ color: '#A84060' }}>無料会員</p>
+        </Link>
+        <Link href="/demo/membership/plan" className="flex-1 py-3.5 text-center active:bg-gray-50 transition">
+          <p className="text-[11px] text-gray-400 mb-0.5">有料会員プラン</p>
+          <p className="text-sm font-bold" style={{ color: '#7E2841' }}>詳細を見る</p>
+        </Link>
       </div>
 
-      {/* Profile summary */}
-      <div className="mx-4 mb-3 bg-gray-50 rounded-2xl px-4 py-3">
-        <p className="text-xs font-bold text-gray-500 mb-2">プロフィール情報</p>
-        <div className="space-y-1.5 text-xs text-gray-600">
-          <div className="flex justify-between"><span className="text-gray-400">年齢</span><span>{profile.age}歳</span></div>
-          <div className="flex justify-between"><span className="text-gray-400">お住まい</span><span>{profile.location}</span></div>
-          <div className="flex justify-between"><span className="text-gray-400">お仕事</span><span>{profile.occupation}</span></div>
-          {profile.height && <div className="flex justify-between"><span className="text-gray-400">身長</span><span>{profile.height}cm</span></div>}
-          {profile.smoking && <div className="flex justify-between"><span className="text-gray-400">喫煙</span><span>{profile.smoking}</span></div>}
-        </div>
-        {profile.bio && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-[11px] text-gray-400 mb-1">自己紹介</p>
-            <p className="text-xs text-gray-600 leading-relaxed">{profile.bio}</p>
-          </div>
-        )}
-        {profile.interests.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-[11px] text-gray-400 mb-1.5">趣味・興味</p>
-            <div className="flex flex-wrap gap-1.5">
-              {profile.interests.map(i => (
-                <span key={i} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#F5E6EA', color: '#A84060' }}>{i}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Icon grid */}
+      {/* ── Icon grid ── */}
       <div className="py-2">
         {MENU_ROWS.map((row, ri) => (
           <div key={ri} className="flex border-b border-gray-50">
@@ -138,7 +141,20 @@ export default function FemaleProfilePage() {
         ))}
       </div>
 
-      <div className="px-4 pt-4 pb-6">
+      {/* ── Banners ── */}
+      <div className="px-4 pt-4 flex gap-3">
+        <Link href="/demo/membership/plan" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a73e8, #0d47a1)' }}>
+          有料会員プラン
+          <span className="text-xs font-normal mt-0.5">詳細を見る →</span>
+        </Link>
+        <Link href="/demo/points" className="flex-1 h-24 rounded-xl flex flex-col items-center justify-center text-white font-bold text-sm active:opacity-80 transition" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+          ポイントを
+          <span className="mt-0.5">購入する →</span>
+        </Link>
+      </div>
+
+      {/* ── External links ── */}
+      <div className="px-4 pt-3 pb-6">
         <a
           href="https://www.instagram.com/motesnap_?igsh=cm84bml5OHFncnI2"
           target="_blank"
@@ -156,6 +172,25 @@ export default function FemaleProfilePage() {
             <p className="text-white/80 text-xs mt-0.5">Instagramをフォローする</p>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+
+        <a
+          href="https://mote-snap.com/?utm_source=ig&utm_medium=social&utm_content=link_in_bio"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white shadow-sm active:opacity-80 transition"
+        >
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f9ce34, #f5a623)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-sm text-gray-800">mote-snap.com</p>
+            <p className="text-gray-400 text-xs mt-0.5">公式サイトを見る</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </a>
       </div>
     </div>
