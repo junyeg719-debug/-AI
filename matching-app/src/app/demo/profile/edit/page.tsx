@@ -202,13 +202,11 @@ export default function ProfileEditPage() {
   useEffect(() => {
     if (!isLoaded) return
     storage.setUserPhotos(photos)
-    if (photos[0]) storage.setUserAvatar(photos[0])
-    else storage.setUserAvatar('')
   }, [photos, isLoaded])
 
   const openPhotoPicker = (idx: number) => { setActivePhotoIdx(idx); fileRef.current?.click() }
 
-  const compressImage = (base64: string, maxPx = 900, quality = 0.82): Promise<string> =>
+  const compressImage = (base64: string, maxPx = 800, quality = 0.72): Promise<string> =>
     new Promise(resolve => {
       const img = new Image()
       img.onload = () => {

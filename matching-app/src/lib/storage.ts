@@ -65,8 +65,10 @@ export const storage = {
   getUserBio: (fallback: string) => get<string>(KEYS.userBio, fallback),
   setUserBio: (bio: string) => set(KEYS.userBio, bio),
 
-  getUserAvatar: () => get<string | null>(KEYS.userAvatar, null),
-  setUserAvatar: (base64: string) => set(KEYS.userAvatar, base64),
+  getUserAvatar: () => {
+    const photos = get<(string | null)[]>(KEYS.userPhotos, Array(6).fill(null))
+    return photos[0] ?? null
+  },
 
   getUserPhotos: () => get<(string | null)[]>(KEYS.userPhotos, Array(6).fill(null)),
   setUserPhotos: (photos: (string | null)[]) => set(KEYS.userPhotos, photos),

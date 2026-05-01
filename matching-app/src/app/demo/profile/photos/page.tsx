@@ -22,16 +22,32 @@ export default function ProfilePhotosPage() {
     fileRef.current?.click()
   }
 
+  const compressImage = (base64: string, maxPx = 800, quality = 0.72): Promise<string> =>
+    new Promise(resolve => {
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        if (width > maxPx || height > maxPx) {
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx }
+          else { width = Math.round(width * maxPx / height); height = maxPx }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width; canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.src = base64
+    })
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
-    const base64 = await fileToBase64(file)
+    const raw = await fileToBase64(file)
+    const base64 = await compressImage(raw)
     setPhotos(prev => {
       const next = prev.map((p, i) => i === activeIdx ? base64 : p)
       storage.setUserPhotos(next)
-      // sync main avatar from index 0
-      if (activeIdx === 0) storage.setUserAvatar(base64)
       return next
     })
   }
@@ -40,7 +56,6 @@ export default function ProfilePhotosPage() {
     setPhotos(prev => {
       const next = prev.map((p, i) => i === idx ? null : p)
       storage.setUserPhotos(next)
-      if (idx === 0) storage.setUserAvatar('')
       return next
     })
   }
