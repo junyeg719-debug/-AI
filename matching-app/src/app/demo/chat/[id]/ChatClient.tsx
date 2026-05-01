@@ -14,6 +14,7 @@ import {
   type DemoMessage,
 } from '@/lib/demo-data'
 import { storage } from '@/lib/storage'
+import { channel } from '@/lib/channel'
 
 const FIRST_MSG_TEMPLATE = 'はじめまして！プロフィール拝見して、共通点がありそうだと思っていいねしました😊 ぜひお話しできたら嬉しいです。よろしくお願いします！'
 
@@ -62,7 +63,14 @@ function groupByDate(messages: DemoMessage[]): Record<string, DemoMessage[]> {
 }
 
 export default function ChatClient({ matchId }: { matchId: string }) {
-  const match = DEMO_MATCHES.find((m) => m.id === matchId)
+  const staticMatch = DEMO_MATCHES.find((m) => m.id === matchId)
+  const dynamicMatch = !staticMatch
+    ? (() => {
+        const m = storage.getMatches().find(sm => sm.matchId === matchId)
+        return m ? { id: matchId, user1_id: DEMO_USER_ID, user2_id: m.userId, created_at: m.matchedAt, last_message_at: null } : null
+      })()
+    : null
+  const match = staticMatch ?? dynamicMatch
   const partnerId = match ? (match.user1_id === DEMO_USER_ID ? match.user2_id : match.user1_id) : null
   const partner = ALL_PROFILES.find((p) => p.user_id === partnerId)
 
@@ -81,6 +89,25 @@ export default function ChatClient({ matchId }: { matchId: string }) {
       setMessages(stored)
       setHasSentFirst(true)
     }
+  }, [matchId])
+
+  useEffect(() => {
+    return channel.on(ev => {
+      if (ev.type === 'message' && ev.matchId === matchId) {
+        const msg: DemoMessage = {
+          id: ev.msg.id, match_id: matchId,
+          sender_id: ev.msg.senderId, content: ev.msg.content,
+          is_read: false, created_at: ev.msg.createdAt,
+        }
+        setMessages(prev => {
+          if (prev.find(m => m.id === msg.id)) return prev
+          const next = [...prev, msg]
+          storage.setMessages(matchId, next)
+          return next
+        })
+        setHasSentFirst(true)
+      }
+    })
   }, [matchId])
 
   const lastPartnerMsg = messages.filter((m) => m.sender_id !== DEMO_USER_ID).at(-1)?.content ?? ''

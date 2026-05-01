@@ -14,6 +14,7 @@ import {
 } from '@/lib/demo-data'
 import { useLikes } from '@/lib/likes-context'
 import { storage } from '@/lib/storage'
+import { channel } from '@/lib/channel'
 
 // ── Constants ──────────────────────────────────
 const SORT_TABS = [
@@ -140,6 +141,7 @@ export default function DemoDiscoverPage() {
     })
     setPendingLike(null)
     decrement()
+    channel.send({ type: 'like_sent', profileId: profile.id })
     if (LIKED_ME_PROFILE_IDS.has(profile.id)) {
       const mid = MATCH_ID_BY_PROFILE_ID[profile.id]
       setMatchId(mid)
