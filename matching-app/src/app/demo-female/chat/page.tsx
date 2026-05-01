@@ -1,142 +1,143 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Send } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { storage } from '@/lib/storage'
+import { SlidersHorizontal, User } from 'lucide-react'
+import {
+  FEMALE_DEMO_MATCHES,
+  FEMALE_DEMO_MESSAGES,
+  MALE_PROFILE_MAP,
+  FEMALE_USER_ID,
+} from '@/lib/female-demo-data'
 import { channel } from '@/lib/channel'
-import { DEMO_USER } from '@/lib/demo-data'
-import type { DemoMessage } from '@/lib/demo-data'
+import { formatDistanceToNow } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import type { DemoMatch, DemoMessage } from '@/lib/demo-data'
 
-const MATCH_ID = 'match-demo-pair'
-const FEMALE_USER_ID = 'user-001'
-const FEMALE_NAME = 'まい'
-const MALE = DEMO_USER
-
-export default function FemaleChatPage() {
-  const [messages, setMessages] = useState<DemoMessage[]>([])
-  const [input, setInput] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
+export default function FemaleChatListPage() {
+  const [msgMap, setMsgMap] = useState<Record<string, DemoMessage[]>>(() => {
+    const m: Record<string, DemoMessage[]> = {}
+    for (const match of FEMALE_DEMO_MATCHES) {
+      m[match.id] = FEMALE_DEMO_MESSAGES[match.id] ?? []
+    }
+    return m
+  })
+  const [extraMatches, setExtraMatches] = useState<DemoMatch[]>([])
+  const [liveMsg, setLiveMsg] = useState<{ matchId: string; msg: DemoMessage } | null>(null)
 
   useEffect(() => {
-    const stored = storage.getMessages(MATCH_ID) as DemoMessage[]
-    setMessages(stored)
+    const m: Record<string, DemoMessage[]> = {}
+    for (const match of FEMALE_DEMO_MATCHES) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`female_messages_${match.id}`) ?? 'null')
+        m[match.id] = stored ?? FEMALE_DEMO_MESSAGES[match.id] ?? []
+      } catch {
+        m[match.id] = FEMALE_DEMO_MESSAGES[match.id] ?? []
+      }
+    }
+    setMsgMap(m)
+
+    try {
+      const stored: Array<{ matchId: string; userId: string; matchedAt: string }> = JSON.parse(localStorage.getItem('female_matches') ?? '[]')
+      const extra: DemoMatch[] = stored
+        .filter(sm => !FEMALE_DEMO_MATCHES.find(m => m.id === sm.matchId))
+        .map(sm => ({ id: sm.matchId, user1_id: FEMALE_USER_ID, user2_id: sm.userId, created_at: sm.matchedAt, last_message_at: null }))
+      setExtraMatches(extra)
+    } catch {}
   }, [])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  useEffect(() => {
     return channel.on(ev => {
-      if (ev.type === 'message' && ev.matchId === MATCH_ID) {
+      if (ev.type === 'message') {
         const msg: DemoMessage = {
-          id: ev.msg.id,
-          match_id: MATCH_ID,
-          sender_id: ev.msg.senderId,
-          content: ev.msg.content,
-          is_read: false,
-          created_at: ev.msg.createdAt,
+          id: ev.msg.id, match_id: ev.matchId,
+          sender_id: ev.msg.senderId, content: ev.msg.content,
+          is_read: false, created_at: ev.msg.createdAt,
         }
-        setMessages(prev => {
-          if (prev.find(m => m.id === msg.id)) return prev
-          const next = [...prev, msg]
-          storage.setMessages(MATCH_ID, next)
-          return next
+        setLiveMsg({ matchId: ev.matchId, msg })
+        setMsgMap(prev => {
+          const existing = prev[ev.matchId] ?? []
+          if (existing.find(m => m.id === msg.id)) return prev
+          return { ...prev, [ev.matchId]: [...existing, msg] }
         })
       }
     })
   }, [])
 
-  const sendMessage = () => {
-    const text = input.trim()
-    if (!text) return
-    const msg: DemoMessage = {
-      id: `f-${Date.now()}`,
-      match_id: MATCH_ID,
-      sender_id: FEMALE_USER_ID,
-      content: text,
-      is_read: false,
-      created_at: new Date().toISOString(),
-    }
-    setMessages(prev => {
-      const next = [...prev, msg]
-      storage.setMessages(MATCH_ID, next)
-      return next
-    })
-    channel.send({ type: 'message', matchId: MATCH_ID, msg: { id: msg.id, content: msg.content, senderId: msg.sender_id, createdAt: msg.created_at } })
-    setInput('')
-  }
+  const allMatches = [...FEMALE_DEMO_MATCHES, ...extraMatches]
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white px-4 pt-10 pb-3 shadow-sm flex items-center gap-3 flex-shrink-0">
-        <Link href="/demo-female" className="p-2 rounded-full hover:bg-gray-100 transition">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </Link>
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
-          俊
+    <div className="min-h-screen">
+      <div className="bg-white px-4 pt-10 pb-4 sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-900">メッセージ</h1>
+          <button className="p-2 rounded-full hover:bg-gray-50 transition">
+            <SlidersHorizontal className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
-        <div className="flex-1">
-          <p className="font-bold text-sm text-gray-900">{MALE.name} {MALE.age}歳</p>
-          <p className="text-xs text-gray-400">{MALE.occupation}</p>
-        </div>
-        <span className="text-xs px-2 py-0.5 rounded-full font-bold text-white" style={{ background: '#A84060' }}>
-          女性ビュー
-        </span>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center py-10 text-gray-400 text-sm">
-            <p className="text-2xl mb-2">💕</p>
-            <p>マッチングしました！</p>
-            <p className="text-xs mt-1">最初のメッセージを送りましょう</p>
-          </div>
-        )}
-        {messages.map(msg => {
-          const isMine = msg.sender_id === FEMALE_USER_ID
+      <div className="bg-white divide-y divide-gray-50">
+        {allMatches.map(match => {
+          const partnerId = match.user1_id === FEMALE_USER_ID ? match.user2_id : match.user1_id
+          const partner = MALE_PROFILE_MAP.get(partnerId)
+          if (!partner) return null
+
+          const messages = msgMap[match.id] ?? []
+          const lastMsg = messages[messages.length - 1]
+          const liveForThis = liveMsg?.matchId === match.id ? liveMsg.msg : null
+          const displayMsg = liveForThis ?? lastMsg
+          const unread = messages.filter(m => !m.is_read && m.sender_id !== FEMALE_USER_ID).length
+          const noMessages = messages.length === 0
+
           return (
-            <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} items-end gap-2`}>
-              {!isMine && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
-                  俊
+            <Link
+              key={match.id}
+              href={`/demo-female/chat/${match.id}`}
+              className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition active:bg-gray-100 relative"
+            >
+              <div className="relative flex-shrink-0">
+                <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${partner.color} flex items-center justify-center text-xl`}>
+                  {partner.emoji}
                 </div>
-              )}
-              <div
-                className="max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
-                style={isMine
-                  ? { background: '#A84060', color: 'white', borderBottomRightRadius: 4 }
-                  : { background: 'white', color: '#1f2937', borderBottomLeftRadius: 4 }
-                }
-              >
-                {msg.content}
+                {partner.isOnline && (
+                  <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+                )}
               </div>
-            </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between mb-0.5">
+                  <p className="font-semibold text-gray-900 text-sm">
+                    {partner.name}{'　'}
+                    <span className="font-normal text-xs text-gray-400">
+                      {partner.age}歳 {partner.location.replace(/[都府県]$/, '')}
+                    </span>
+                  </p>
+                  {displayMsg && (
+                    <p className="text-[11px] text-gray-400 flex-shrink-0 ml-1">
+                      {formatDistanceToNow(new Date(displayMsg.created_at), { addSuffix: false, locale: ja })}
+                    </p>
+                  )}
+                  {liveForThis && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold text-white flex-shrink-0 ml-1" style={{ background: '#A84060' }}>LIVE</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-gray-500 truncate">
+                    {noMessages && !displayMsg ? 'メッセージ交換をしていません' : displayMsg?.content ?? 'メッセージ交換をしていません'}
+                  </p>
+                  {unread > 0 && (
+                    <span className="ml-1 min-w-5 h-5 text-white text-xs rounded-full flex items-center justify-center px-1.5 flex-shrink-0 font-bold" style={{ background: '#A84060' }}>
+                      {unread}
+                    </span>
+                  )}
+                  {noMessages && !displayMsg && (
+                    <span className="text-[11px] text-gray-400 flex-shrink-0">未返信</span>
+                  )}
+                </div>
+              </div>
+            </Link>
           )
         })}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="bg-white px-4 py-3 flex gap-2 items-center border-t border-gray-100 flex-shrink-0">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-          placeholder={`${FEMALE_NAME}として送信...`}
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm focus:outline-none"
-        />
-        <button
-          onClick={sendMessage}
-          disabled={!input.trim()}
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition"
-          style={{ background: '#A84060' }}
-        >
-          <Send className="w-4 h-4 text-white" />
-        </button>
       </div>
     </div>
   )
