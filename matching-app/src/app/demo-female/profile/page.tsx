@@ -6,6 +6,11 @@ import { Star, Bell, ThumbsUp, Award, BookOpen, Settings, Gem, User, Plus, Store
 import { useLikes } from '@/lib/likes-context'
 import { FEMALE_DEMO_USER } from '@/lib/female-demo-data'
 
+function getStore<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback }
+}
+
 const MENU_ROWS = [
   [
     { icon: Star, label: 'お気に入り', badge: null },
@@ -30,21 +35,17 @@ export default function FemaleProfilePage() {
   const [nickname, setNickname] = useState('')
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('female_avatar')
-      if (saved) setPhoto(saved)
-      const saved_name = localStorage.getItem('female_nickname')
-      setNickname(saved_name ?? FEMALE_DEMO_USER.name)
-    } catch {
-      setNickname(FEMALE_DEMO_USER.name)
-    }
+    const photos = getStore<(string | null)[] | null>('female_photos', null)
+    if (photos?.[0]) setPhoto(photos[0])
+    const profile = getStore<Record<string, string> | null>('female_profile', null)
+    setNickname(profile?.nickname ?? FEMALE_DEMO_USER.name)
   }, [])
 
   return (
     <div className="min-h-screen bg-white">
       {/* ── Hero: avatar + name ── */}
       <div className="pt-14 pb-5 flex flex-col items-center gap-3">
-        <div className="relative">
+        <Link href="/demo-female/profile/edit" className="relative">
           <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow-sm">
             {photo
               ? <img src={photo} alt="avatar" className="w-full h-full object-cover" />
@@ -60,7 +61,7 @@ export default function FemaleProfilePage() {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
-        </div>
+        </Link>
         <p className="text-base font-bold text-gray-900">
           {nickname || <span className="text-gray-400 font-normal text-sm">名前を設定する</span>}
         </p>
