@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F8F5F6;
+  --foreground: #1A1A1A;
+  --primary: #7E2841;
+  --primary-hover: #9B3452;
+  --primary-pale: #F5E6EA;
+  --border: #E8E0E2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+    'Yu Gothic', 'Noto Sans JP', Arial, sans-serif;
+}
