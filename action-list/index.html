@@ -160,7 +160,16 @@ main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:backg
 .share .sm{font-size:12.5px;color:var(--muted);margin:0;line-height:1.6}
 .share .warn{color:#d0473a}
 .shrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.shrow input{flex:1;min-width:8em;font:inherit;font-size:16px;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink)}
+.shrow input{flex:1;min-width:8em;font:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink)}
+.shtop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.share.on{display:grid}
+.linkbox{display:flex;gap:6px}
+.linkbox input{flex:1;min-width:0;font:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--bg);color:var(--ink)}
+.linebtn{text-decoration:none;display:inline-block;background:#06c755!important;border-color:#06c755!important;color:#fff!important}
+.code{letter-spacing:.1em;color:var(--ink)}
+.have summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0}
+.have{display:grid;gap:6px}
+.shrow input[id^="codeIn"]{letter-spacing:.12em;text-transform:uppercase}
 .later{border:0;background:none;color:var(--muted);font-size:13px;font-weight:700;padding:6px}
 
 /* sheet */
@@ -307,7 +316,7 @@ let syncState='local';
 function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} queueSync(); }
 
 // ---------- 講師と進捗を共有（Googleスプレッドシート） ----------
-const API_URL='';
+const API_URL='https://script.google.com/macros/s/AKfycbxF13pcVi3sdE4k9zuSwYZdvqBld5L4X9Y3YudopimACNXdl-IIvw6LvdOgG5SEkOhQ/exec';
 const SHARE=LS+':share';
 let share=null; try{ share=JSON.parse(localStorage.getItem(SHARE)||'null'); }catch(e){}
 let shareDismissed=false; try{ shareDismissed=localStorage.getItem(SHARE+':later')==='1'; }catch(e){}
@@ -342,27 +351,85 @@ async function syncNow(keepalive){
   }catch(e){ dirty=true; shareError=e.message; if(/コード/.test(e.message)){ share=null; saveShare(); } }
   syncing=false; renderSummary(); renderShareBox();
 }
+// 共有リンク（?c=コード）を開いた／コードを入れたとき。初めての端末では手元のチェックと合わせる
 async function registerCode(code,msgEl){
-  code=String(code||'').normalize('NFKC').trim().toUpperCase();
-  if(!code){ msgEl.textContent='受講生コードを入力してください'; return; }
-  if(!API_URL){ msgEl.textContent='まだ講師との共有の準備ができていません'; return; }
-  msgEl.textContent='確認中…';
+  code=String(code||'').normalize('NFKC').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const say=m=>{ if(msgEl) msgEl.textContent=m; };
+  if(!code){ say('コードを入力してください'); return false; }
+  if(!API_URL){ say('まだ共有の準備ができていません'); return false; }
+  say('確認中…');
   try{
     const j=await api({action:'register',code});
-    for(const id of (j.checked||[])) store.c[id]=1;   // 別の端末で付けたチェックも戻す
+    for(const id of (j.checked||[])) store.c[id]=1;
     try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
     share={code,name:j.name||'',since:Date.now()}; saveShare(); shareError='';
-    dirty=true; await syncNow();
-    render();
+    dirty=true; await syncNow(); keepCodeInUrl();
+    render(); return true;
+  }catch(e){ say(e.message); shareError=e.message; renderShareBox(); return false; }
+}
+async function createLink(name,msgEl){
+  name=String(name||'').trim();
+  if(!name){ msgEl.textContent='名前を入れてください'; return; }
+  msgEl.textContent='作成中…';
+  try{
+    const j=await api({action:'create',name});
+    share={code:j.code,name:j.name||name,since:Date.now(),justCreated:true}; saveShare(); shareError='';
+    dirty=true; await syncNow(); keepCodeInUrl(); state.sumOpen=true; render();
   }catch(e){ msgEl.textContent=e.message; }
+}
+// 相手の端末で変えたチェックを取り込む（送信待ちがあるときは先に送る）
+let pulling=false;
+async function pull(){
+  if(!API_URL||!share||pulling) return;
+  if(dirty){ await syncNow(); if(dirty) return; }
+  pulling=true;
+  try{
+    const j=await api({action:'register',code:share.code});
+    if(!dirty){
+      const next={}; for(const k of Object.keys(store.c)) if(k.startsWith('c')) next[k]=1;
+      for(const id of (j.checked||[])) next[id]=1;
+      const changed=JSON.stringify(Object.keys(next).sort())!==JSON.stringify(Object.keys(store.c).sort());
+      store.c=next; try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
+      if(j.name&&j.name!==share.name){ share.name=j.name; saveShare(); }
+      share.lastPulled=Date.now(); saveShare(); shareError='';
+      if(changed) render(); else renderSummary();
+    }
+  }catch(e){ shareError=e.message; renderSummary(); }
+  pulling=false;
+}
+const shareLink=()=>share?location.origin+location.pathname.replace(/index\.html$/,'')+'?c='+encodeURIComponent(share.code):'';
+function keepCodeInUrl(){
+  try{
+    const u=new URL(location.href);
+    if(share){ if(u.searchParams.get('c')!==share.code){ u.searchParams.set('c',share.code); history.replaceState(null,'',u); } }
+    else if(u.searchParams.has('c')){ u.searchParams.delete('c'); history.replaceState(null,'',u); }
+  }catch(e){}
+  // iPhoneはホーム画面のアプリとSafariで保存場所が別なので、今のURL（コード付き）でホーム画面に追加されるようにする
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const m=document.querySelector('link[rel="manifest"]'); if(ios&&share&&m) m.remove();
 }
 function shareHtml(compact){
   if(!API_URL) return '';
+  const id=compact?'2':'1';
   if(share){
     const t=share.lastSent?new Date(share.lastSent).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだ';
-    return `<div class="share on"><div><strong>講師と共有中</strong>${share.name?`（${esc(share.name)}さん）`:''}<br><span class="sm">最終送信：${t}${syncing||dirty?'（送信待ち）':''}${shareError?`<br><span class="warn">${esc(shareError)}</span>`:''}</span></div><button class="reset" id="shareStop">共有をやめる</button></div>`;
+    const link=shareLink();
+    const line='https://line.me/R/share?text='+encodeURIComponent(`${share.name?share.name+'の':''}アクションリストです。このリンクを開くと同じ内容を見られます。\n${link}`);
+    return `<div class="share on"><div class="shtop"><div><strong>共有中</strong>${share.name?`（${esc(share.name)}）`:''}<br><span class="sm">最終保存：${t}${syncing||dirty?'（送信待ち）':''}${shareError?`<br><span class="warn">${esc(shareError)}</span>`:''}</span></div><button class="later" id="shareStop">共有をやめる</button></div>
+      <p class="sm">${share.justCreated?'<b>共有リンクができました。</b>':''}このリンクを講師に送ると、講師も同じアクションリストを見られます。どちらでチェックしても同じ内容になります。</p>
+      <div class="linkbox"><input readonly value="${esc(link)}" id="shareUrl${id}" aria-label="共有リンク"><button class="reset" data-copy="shareUrl${id}">コピー</button></div>
+      <div class="shrow"><a class="reset linebtn" href="${esc(line)}" target="_blank" rel="noopener noreferrer">LINEで送る</a><span class="sm">コード：<b class="code">${esc(share.code)}</b></span></div>
+      <div class="sm" data-copied="shareUrl${id}" role="status"></div></div>`;
   }
-  return `<div class="share"><strong>講師と進捗を共有する</strong><p class="sm">講師から受け取った「受講生コード」を入れると、チェックした内容が講師に届きます。別のスマホでも同じコードを入れると、続きから使えます。</p><div class="shrow"><input id="${compact?'codeIn2':'codeIn'}" placeholder="例：AB12CD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="受講生コード"><button class="reset" data-reg="${compact?'codeIn2':'codeIn'}">登録</button>${compact?'':'<button class="later" id="shareLater">あとで</button>'}</div><div class="sm warn" data-msg="${compact?'codeIn2':'codeIn'}" role="status"></div></div>`;
+  return `<div class="share"><strong>講師と共有する</strong>
+    <p class="sm">共有リンクを作って講師に送ると、受講生と講師が同じアクションリストを見られます。</p>
+    <div class="shrow"><input id="nameIn${id}" placeholder="あなたの名前（例：山田太郎）" autocomplete="name" aria-label="名前"><button class="reset" data-create="nameIn${id}">共有リンクを作る</button></div>
+    <div class="sm warn" data-msg="nameIn${id}" role="status"></div>
+    <details class="have"><summary>共有リンク・コードを受け取った方はこちら</summary>
+      <div class="shrow"><input id="codeIn${id}" placeholder="コード（例：AB12CD34）" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="コード"><button class="reset" data-reg="codeIn${id}">開く</button></div>
+      <div class="sm warn" data-msg="codeIn${id}" role="status"></div>
+      <p class="sm">リンクを受け取った場合は、そのリンクを開くだけで大丈夫です。</p></details>
+    ${compact?'':'<button class="later" id="shareLater">あとで</button>'}</div>`;
 }
 function renderShareBox(){
   const box=document.getElementById('sharebox'); if(!box) return;
@@ -371,13 +438,23 @@ function renderShareBox(){
 }
 document.addEventListener('click',e=>{
   const r=e.target.closest('[data-reg]'); if(r){ const id=r.dataset.reg; registerCode(document.getElementById(id).value, document.querySelector(`[data-msg="${id}"]`)); return; }
+  const cr=e.target.closest('[data-create]'); if(cr){ const id=cr.dataset.create; createLink(document.getElementById(id).value, document.querySelector(`[data-msg="${id}"]`)); return; }
+  const cp=e.target.closest('[data-copy]'); if(cp){ const el=document.getElementById(cp.dataset.copy); const msg=document.querySelector(`[data-copied="${cp.dataset.copy}"]`);
+    navigator.clipboard.writeText(el.value).then(()=>{ msg.textContent='コピーしました。LINEなどに貼り付けて送ってください。'; },()=>{ el.select(); msg.textContent='選択された文字をコピーしてください。'; }); return; }
   if(e.target.closest('#shareLater')){ shareDismissed=true; try{ localStorage.setItem(SHARE+':later','1'); }catch(_){} renderShareBox(); return; }
-  if(e.target.closest('#shareStop')){ share=null; saveShare(); try{ localStorage.removeItem(SHARE+':dirty'); }catch(_){} dirty=false; renderSummary(); return; }
+  if(e.target.closest('#shareStop')){ share=null; saveShare(); try{ localStorage.removeItem(SHARE+':dirty'); }catch(_){} dirty=false; keepCodeInUrl(); renderSummary(); renderShareBox(); return; }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing&&e.target.matches&&e.target.matches('#codeIn,#codeIn2')){ e.preventDefault(); document.querySelector(`[data-reg="${e.target.id}"]`).click(); } });
+document.addEventListener('keydown',e=>{ if(e.key!=='Enter'||e.isComposing||!e.target.matches) return;
+  if(e.target.matches('[id^="codeIn"]')){ e.preventDefault(); document.querySelector(`[data-reg="${e.target.id}"]`).click(); }
+  if(e.target.matches('[id^="nameIn"]')){ e.preventDefault(); document.querySelector(`[data-create="${e.target.id}"]`).click(); } });
 addEventListener('online',()=>syncNow());
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') syncNow(true); });
-if(dirty) setTimeout(()=>syncNow(),1500);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') syncNow(true); else pull(); });
+// 起動時：リンクにコードが付いていればそれを使い、共有中なら相手の変更を取り込む
+setTimeout(()=>{
+  let c=''; try{ c=(new URL(location.href).searchParams.get('c')||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }catch(e){}
+  if(API_URL && c && (!share||share.code!==c)) registerCode(c);
+  else if(share){ keepCodeInUrl(); pull(); }
+},300);
 if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 
 // ---------- helpers ----------
