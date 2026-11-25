@@ -43,6 +43,9 @@ jobs:
         working-directory: matching-app
         run: npm run build
 
+      - name: Add action list app
+        run: cp -r action-list matching-app/out/action-list
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

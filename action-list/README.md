@@ -7,10 +7,8 @@
 
 `https://junyeg719-debug.github.io/-AI/action-list/`
 
-初回だけ GitHub の Settings → Pages で次のように設定してください。
+main ブランチに入ると、`.github/workflows/deploy-demo.yml` がマッチングアプリのデモと一緒に自動で公開します（Pages の設定変更は不要）。
 
-- Source: **Deploy from a branch**
-- Branch: このファイルがあるブランチ / `/(root)`
 
 ## スマホへのインストール
 
