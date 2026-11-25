@@ -93,7 +93,17 @@ main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:backg
 .clear{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:0 9px;border-radius:99px;letter-spacing:.05em;border:2px solid var(--surface)}
 .done-mark{position:absolute;top:-10px;right:-8px;width:28px;height:28px;border-radius:50%;background:var(--c);display:grid;place-items:center;border:2px solid var(--surface)}
 .done-mark::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
-.empty{padding:40px 0;text-align:center;color:var(--muted)}
+.empty{padding:40px 0;text-align:center;color:var(--muted);line-height:1.8}
+#results{padding-top:16px;display:grid;gap:10px}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rhead strong{font-size:16px}
+.rtotal{margin-left:8px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] .rtotal{color:var(--ink)}
+.rdiv{display:grid;gap:10px;margin-top:8px}
+.rdiv h3{margin:6px 0 0;display:flex;align-items:center;gap:6px;font-size:16px;color:var(--c);border-bottom:3px solid var(--c);padding-bottom:4px}
+.rcat{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;margin-top:4px}
+.rn{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted)}
+.rdiv h3 .rn{color:var(--c)}
 
 .sumbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:3px solid var(--c);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -6px 20px -14px rgba(0,0,0,.4)}
 .sumbar .wrap{padding-block:10px}
@@ -184,7 +194,7 @@ body{margin:0;overscroll-behavior-y:none}
 <main id="main">
   <div class="wrap">
     <div class="tools">
-      <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="アクションを検索" autocomplete="off"></label>
+      <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="アクションを検索（例：ひげ、香水、電話）" enterkeyhint="search" autocomplete="off"></label>
       <div class="flabel">表示を絞り込む</div>
       <div class="filters">
         <label class="chk"><input type="checkbox" id="fUndone">未完了</label>
@@ -194,7 +204,7 @@ body{margin:0;overscroll-behavior-y:none}
     </div>
     <div class="tabs" role="tablist" id="tabs"></div>
     <section class="hero" id="hero"></section>
-    <div id="results"></div>
+    <div id="results" hidden aria-live="polite"></div>
     <div class="grid" id="grid"></div>
   </div>
 </main>
@@ -229,7 +239,7 @@ const ICON = {
 // デート前チェック: per-date checklist, shown as an extra tile, not counted in progress
 const CHECK_CAT = {name:'デート前チェック', check:true, items:DATA.checklist.map(x=>({id:x.id,title:x.title,sec:x.sec,type:'',note:'',links:{}}))};
 
-const state = {tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set()};
+const state = {tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set(), closed:new Set()};
 let store = {c:{}, f:{}};
 
 // ---------- persistence: this device's browser storage ----------
@@ -247,14 +257,33 @@ const counted=c=>!c.check;
 function catStats(c){ const n=c.items.length, d=c.items.filter(i=>store.c[i.id]).length; return {n,d}; }
 function divStats(k){ let n=0,d=0; for(const c of cats(k)) if(counted(c)){ const s=catStats(c); n+=s.n; d+=s.d; } return {n,d,p:n?Math.round(d/n*100):0}; }
 const isImp=t=>/最重要|超重要|【重要】/.test(t);
-function visible(it){
+// ---------- search ----------
+// 全角/半角・大文字/小文字・カタカナ/ひらがなの違いと記号を無視し、スペース区切りの語をすべて含むものを探す
+const toHira=s=>s.replace(/[\u30a1-\u30f6]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));
+const norm=s=>toHira(String(s||'').normalize('NFKC').toLowerCase()).replace(/[\s・･、。,.「」『』（）()【】\[\]※▼→!！?？:：/／~〜'"“”’]/g,'');
+// よく使う漢字にはよみがなを足して、ひらがなでも見つかるようにする
+const READ={'髭':'ひげ','眉':'まゆ','爪':'つめ','鼻毛':'はなげ','腕毛':'うでげ','指毛':'ゆびげ','香水':'こうすい','服':'ふく','靴':'くつ','髪':'かみ','美容室':'びようしつ','美容院':'びよういん','歯':'はみがき','口臭':'こうしゅう','匂い':'におい','臭':'におい','睡眠':'すいみん','日光':'にっこう','掃除':'そうじ','脱毛':'だつもう','整形':'せいけい','二重':'ふたえ','薄毛':'うすげ','眼鏡':'めがね','肌':'はだ','皮膚科':'ひふか','筋トレ':'きんとれ','食事':'しょくじ','水':'みず','声':'こえ','電話':'でんわ','写真':'しゃしん','撮影':'さつえい','会話':'かいわ','褒める':'ほめる','手をつなぐ':'てをつなぐ','手を繋':'てをつな','身体接触':'しんたいせっしょく','日報':'にっぽう','講師':'こうし','音声':'おんせい','添削':'てんさく','予約':'よやく','購入':'こうにゅう','継続':'けいぞく','毎日':'まいにち','鏡':'かがみ','唇':'くちびる','財布':'さいふ','汗':'あせ','最重要':'さいじゅうよう','重要':'じゅうよう'};
+const INDEX=new Map();
+function hay(it,k,cn){
+  let h=INDEX.get(it.id); if(h) return h;
+  let raw=[it.title,it.group,it.note,it.sec,cn,it.type,DIV[k].label,...Object.keys(it.links||{})].join(' ');
+  for(const w in READ) if(raw.includes(w)) raw+=' '+READ[w];
+  if(isImp(it.title)) raw+=' 最重要 さいじゅうよう';
+  h=norm(raw); INDEX.set(it.id,h); return h;
+}
+const terms=()=>String(state.q).normalize('NFKC').split(/\s+/).map(norm).filter(Boolean);
+function matches(it,k,cn){ const ts=terms(); if(!ts.length) return true; const h=hay(it,k,cn); return ts.every(x=>h.includes(x)); }
+function passFilters(it){
   if(state.undone && store.c[it.id]) return false;
   if(state.fav && !store.f[it.id]) return false;
   if(state.hideTarget && (it.type==='対象者のみ'||it.type==='カスタム')) return false;
-  if(state.q){ const q=state.q.toLowerCase(); if(!((it.title+' '+(it.group||'')+' '+it.note).toLowerCase().includes(q))) return false; }
   return true;
 }
-const filtering=()=>state.undone||state.fav||state.hideTarget||!!state.q;
+const visible=it=>passFilters(it);
+const listMode=()=>terms().length>0||state.fav;
+const filtering=()=>state.undone||state.fav||state.hideTarget;
+// タイトルに検索語が含まれないときは、備考を開いて見つかった場所を見せる
+const titleHit=it=>{ const ts=terms(); let raw=it.title+' '+(it.group||''); for(const w in READ) if(raw.includes(w)) raw+=' '+READ[w]; const h=norm(raw); return ts.every(x=>h.includes(x)); };
 function ring(p,n){
   const r=37, C=2*Math.PI*r, off=C*(1-p);
   return `<svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="7"/>${n?`<circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--c)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>`:''}</svg>`;
@@ -309,19 +338,7 @@ function renderSheet(){
     if(c.check && it.sec!==lastSec){ html+=`<div class="group">${esc(it.sec)}</div>`; lastSec=it.sec; }
     if(it.group && it.group!==lastGroup){ html+=`<div class="group">${esc(it.group)}</div>`; }
     lastGroup=it.group||null;
-    const done=!!store.c[it.id], fav=!!store.f[it.id], open=state.notes.has(it.id);
-    const lk=Object.entries(it.links||{});
-    const hasMore=!!it.note || lk.length;
-    const chips=[]; if(it.type) chips.push(`<span class="chip t-${esc(it.type)}">${esc(it.type)}</span>`); if(isImp(it.title)) chips.push('<span class="chip imp">最重要</span>');
-    const linksHtml = lk.length?`<div class="lnks">${lk.map(([t,u])=>`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span>${esc(t)}</span></a>`).join('')}</div>`:'';
-    const noteText = it.note && !(lk.length===1 && it.note.trim()===lk[0][0]) ? it.note : '';
-    html+=`<div class="act${done?' is-done':''}" data-id="${it.id}">
-      <button class="tick" data-act="tick" aria-pressed="${done}" aria-label="${done?'未完了に戻す':'完了にする'}"></button>
-      <div class="main"><div class="ttl">${esc(it.title)}</div>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-      ${hasMore?`<button class="more" data-act="note" aria-expanded="${open}">${open?'▲ 閉じる':'▼ 詳しく見る'}</button>`:''}
-      ${open?`${noteText?`<div class="note">${esc(noteText)}</div>`:''}${linksHtml}`:''}</div>
-      ${c.check?'<span></span>':`<button class="fav" data-act="fav" aria-pressed="${fav}" aria-label="お気に入り">${STAR}</button>`}
-    </div>`;
+    html+=actHtml(it,c.check,false);
   }
   if(!items.length) html+='<div class="empty">条件に合うアクションはありません</div>';
   const wasOpen=!sh.hidden; const sc=wasOpen?sh.querySelector('.sheet-b')?.scrollTop:0;
@@ -329,28 +346,90 @@ function renderSheet(){
   sh.hidden=false; document.body.style.overflow='hidden';
   if(wasOpen) sh.querySelector('.sheet-b').scrollTop=sc||0;
 }
+function actHtml(it,check,autoOpen){
+    const done=!!store.c[it.id], fav=!!store.f[it.id];
+    const open = state.notes.has(it.id) ? true : (state.closed.has(it.id) ? false : autoOpen);
+    const lk=Object.entries(it.links||{});
+    const hasMore=!!it.note || lk.length;
+    const chips=[]; if(it.type) chips.push(`<span class="chip t-${esc(it.type)}">${esc(it.type)}</span>`); if(isImp(it.title)) chips.push('<span class="chip imp">最重要</span>');
+    const linksHtml = lk.length?`<div class="lnks">${lk.map(([t,u])=>`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span>${esc(t)}</span></a>`).join('')}</div>`:'';
+    const noteText = it.note && !(lk.length===1 && it.note.trim()===lk[0][0]) ? it.note : '';
+    return `<div class="act${done?' is-done':''}" data-id="${it.id}">
+      <button class="tick" data-act="tick" aria-pressed="${done}" aria-label="${done?'未完了に戻す':'完了にする'}"></button>
+      <div class="main"><div class="ttl">${esc(it.title)}</div>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+      ${hasMore?`<button class="more" data-act="note" aria-expanded="${open}">${open?'▲ 閉じる':'▼ 詳しく見る'}</button>`:''}
+      ${open?`${noteText?`<div class="note">${esc(noteText)}</div>`:''}${linksHtml}`:''}</div>
+      ${check?'<span></span>':`<button class="fav" data-act="fav" aria-pressed="${fav}" aria-label="お気に入り">${STAR}</button>`}
+    </div>`;
+}
+// 検索・お気に入りの結果を、3部門まとめて一覧で出す
+function renderResults(){
+  const on=listMode();
+  $('#results').hidden=!on; $('#grid').hidden=on; $('#hero').hidden=on; $('#tabs').hidden=on;
+  if(!on){ $('#results').innerHTML=''; return; }
+  const ts=terms(); let total=0, body='';
+  for(const k of Object.keys(DIV)){
+    let sec='', cnt=0;
+    for(const c of cats(k)){
+      const hits=c.items.filter(it=>passFilters(it)&&matches(it,k,c.name));
+      if(!hits.length) continue;
+      cnt+=hits.length;
+      sec+=`<div class="rcat"><span aria-hidden="true">${(ICON[k]&&ICON[k][c.name])||'📌'}</span>${esc(c.name)}<span class="rn">${hits.length}件</span></div>`;
+      let lastGroup=null;
+      for(const it of hits){
+        if(it.group && it.group!==lastGroup) sec+=`<div class="group">${esc(it.group)}</div>`;
+        lastGroup=it.group||null;
+        sec+=actHtml(it,!!c.check, ts.length>0 && !titleHit(it));
+      }
+    }
+    if(cnt){ total+=cnt; body+=`<section class="rdiv" style="--c:var(${DIV[k].c})"><h3><span aria-hidden="true">${DIV[k].icon}</span>${DIV[k].label}<span class="rn">${cnt}件</span></h3>${sec}</section>`; }
+  }
+  const what = ts.length ? `「${esc(state.q)}」の検索結果` : 'お気に入り';
+  const extra = ts.length&&state.fav ? '（お気に入りのみ）' : '';
+  let html=`<div class="rhead"><div><strong>${what}</strong>${extra}<span class="rtotal">${total}件</span></div><button class="reset" id="clearSearch">${ts.length?'検索をやめる':'一覧に戻る'}</button></div>`;
+  if(!total){
+    html+= ts.length ? `<div class="empty">見つかりませんでした。<br>言葉を短くするか、ひらがなで試してみてください（例：「ひげ」「こうすい」「でんわ」）。${state.undone||state.hideTarget?'<br>「未完了」「対象者のみを隠す」のチェックを外すと増えるかもしれません。':''}</div>`
+                     : `<div class="empty">お気に入りはまだありません。<br>アクションの右の ★ を押すと、ここに集まります。</div>`;
+  }
+  $('#results').innerHTML=html+body;
+}
 function render(){
   applyColors(document.documentElement,state.tab);
-  renderTabs(); renderHero(); renderGrid(); renderSummary(); renderSheet();
+  renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); renderSheet();
 }
 
 // ---------- events ----------
 $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; state.tab=b.dataset.k; try{localStorage.setItem(LS+':tab',state.tab);}catch(_){} render(); });
 $('#grid').addEventListener('click',e=>{ const t=e.target.closest('.tile'); if(!t) return; state.open=+t.dataset.i; state.notes.clear(); renderSheet(); });
 $('#sumhead').addEventListener('click',()=>{ state.sumOpen=!state.sumOpen; renderSummary(); });
-$('#q').addEventListener('input',e=>{ state.q=e.target.value.trim(); renderGrid(); });
-$('#fUndone').addEventListener('change',e=>{ state.undone=e.target.checked; renderGrid(); });
-$('#fFav').addEventListener('change',e=>{ state.fav=e.target.checked; renderGrid(); });
-$('#fHideTarget').addEventListener('change',e=>{ state.hideTarget=e.target.checked; renderGrid(); });
+let qTimer=null, composing=false;
+const runSearch=()=>{ state.q=$('#q').value.trim(); state.notes.clear(); state.closed.clear(); renderGrid(); renderResults(); };
+$('#q').addEventListener('compositionstart',()=>{ composing=true; });
+$('#q').addEventListener('compositionend',()=>{ composing=false; clearTimeout(qTimer); qTimer=setTimeout(runSearch,60); });
+$('#q').addEventListener('input',()=>{ clearTimeout(qTimer); qTimer=setTimeout(runSearch, composing?250:120); });
+$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing){ e.preventDefault(); clearTimeout(qTimer); runSearch(); $('#q').blur(); } });
+$('#q').closest('form,label').addEventListener('submit',e=>e.preventDefault());
+$('#fUndone').addEventListener('change',e=>{ state.undone=e.target.checked; renderGrid(); renderResults(); });
+$('#fFav').addEventListener('change',e=>{ state.fav=e.target.checked; renderGrid(); renderResults(); });
+$('#fHideTarget').addEventListener('change',e=>{ state.hideTarget=e.target.checked; renderGrid(); renderResults(); });
+$('#results').addEventListener('click',e=>{
+  if(e.target.closest('#clearSearch')){ $('#q').value=''; $('#fFav').checked=false; state.fav=false; runSearch(); window.scrollTo({top:0}); return; }
+  if(handleAct(e)){ renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); }
+});
 $('#sheet').addEventListener('click',e=>{
   if(e.target.closest('#back')){ state.open=null; render(); return; }
   if(e.target.closest('#resetChk')){ for(const it of CHECK_CAT.items) delete store.c[it.id]; persist(); render(); return; }
-  const b=e.target.closest('[data-act]'); if(!b) return;
-  const id=b.closest('.act').dataset.id;
-  if(b.dataset.act==='tick'){ if(store.c[id]) delete store.c[id]; else store.c[id]=1; persist(); render(); }
-  else if(b.dataset.act==='fav'){ if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); renderSheet(); }
-  else if(b.dataset.act==='note'){ state.notes.has(id)?state.notes.delete(id):state.notes.add(id); renderSheet(); }
+  if(handleAct(e)) render();
 });
+// チェック・お気に入り・詳しく見る（シートと検索結果で共通）
+function handleAct(e){
+  const b=e.target.closest('[data-act]'); if(!b) return false;
+  const id=b.closest('.act').dataset.id;
+  if(b.dataset.act==='tick'){ if(store.c[id]) delete store.c[id]; else store.c[id]=1; persist(); }
+  else if(b.dataset.act==='fav'){ if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); }
+  else if(b.dataset.act==='note'){ const open=b.getAttribute('aria-expanded')==='true'; if(open){ state.notes.delete(id); state.closed.add(id); } else { state.closed.delete(id); state.notes.add(id); } }
+  return true;
+}
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open!=null){ state.open=null; render(); } });
 
 // ---------- backup ----------
