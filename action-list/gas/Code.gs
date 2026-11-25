@@ -82,6 +82,7 @@ function doPost(e) {
   try {
     lock.waitLock(15000);
     switch (req.action) {
+      case 'create': return json_(create_(req));
       case 'register': return json_(register_(req));
       case 'sync': return json_(sync_(req));
       case 'list': return json_(list_(req));
@@ -92,6 +93,17 @@ function doPost(e) {
   } finally {
     try { lock.releaseLock(); } catch (e2) {}
   }
+}
+
+// アプリの「共有リンクを作る」から呼ばれる：受講生を登録してコードを返す
+function create_(req) {
+  const name = String(req.name || '').trim().slice(0, 40);
+  if (!name) return { ok: false, error: '名前を入れてください' };
+  const sh = sheet_(ROSTER, ROSTER_HEAD);
+  const used = new Set(rosterRows_().map(r => r.code));
+  let c; do { c = randomCode_(8); } while (used.has(c));
+  sh.appendRow([name, c, '', '受講中', 'アプリから作成 ' + Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm')]);
+  return { ok: true, code: c, name: name };
 }
 
 function register_(req) {
