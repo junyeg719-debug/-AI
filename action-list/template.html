@@ -154,6 +154,14 @@ main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:backg
 .sumrow .fill{height:100%;border-radius:99px}
 .sumrow span:last-child{text-align:right}
 .sync{font-size:11px;color:var(--muted)}
+.share{background:var(--surface);border:2px solid var(--c);border-radius:12px;padding:12px;display:grid;gap:6px}
+#sharebox{margin-top:12px}
+.share.on{display:flex;align-items:center;justify-content:space-between;gap:10px;border-width:1.5px;border-color:var(--line)}
+.share .sm{font-size:12.5px;color:var(--muted);margin:0;line-height:1.6}
+.share .warn{color:#d0473a}
+.shrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.shrow input{flex:1;min-width:8em;font:inherit;font-size:16px;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink)}
+.later{border:0;background:none;color:var(--muted);font-size:13px;font-weight:700;padding:6px}
 
 /* sheet */
 .sheet[hidden]{display:none!important}
@@ -235,6 +243,7 @@ body{margin:0;overscroll-behavior-y:none}
         <label class="chk"><input type="checkbox" id="fHideTarget">対象者のみを隠す</label>
       </div>
     </div>
+    <div id="sharebox" hidden></div>
     <div class="tabs" role="tablist" id="tabs"></div>
     <section class="hero" id="hero"></section>
     <div id="results" hidden aria-live="polite"></div>
@@ -289,7 +298,86 @@ let store = {c:{}, f:{}};
 const LS='love-action-list-v1';
 try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; const m=localStorage.getItem(LS+':mode'); if(m==='talk') state.mode='talk'; const tk=localStorage.getItem(LS+':talk'); if(tk) state.talkKey=tk; }catch(e){}
 let syncState='local';
-function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
+// 初回公開版（行番号のID）で付けたチェックを、新しいIDに引き継ぐ
+(function migrate(){
+  const L=DATA.legacy||{}; let moved=false;
+  for(const bag of [store.c, store.f]) for(const k of Object.keys(bag)) if(L[k]){ bag[L[k]]=bag[k]; delete bag[k]; moved=true; }
+  if(moved) try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
+})();
+function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} queueSync(); }
+
+// ---------- 講師と進捗を共有（Googleスプレッドシート） ----------
+const API_URL='__API_URL__';
+const SHARE=LS+':share';
+let share=null; try{ share=JSON.parse(localStorage.getItem(SHARE)||'null'); }catch(e){}
+let shareDismissed=false; try{ shareDismissed=localStorage.getItem(SHARE+':later')==='1'; }catch(e){}
+let syncTimer=null, syncing=false, dirty=false, shareError='';
+try{ dirty=localStorage.getItem(SHARE+':dirty')==='1'; }catch(e){}
+const saveShare=()=>{ try{ share?localStorage.setItem(SHARE,JSON.stringify(share)):localStorage.removeItem(SHARE); }catch(e){} };
+async function api(body,opts){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),redirect:'follow',...(opts||{})});
+  let j; try{ j=await r.json(); }catch(e){ throw new Error('通信に失敗しました'); }
+  if(!j.ok) throw new Error(j.error||'エラーが発生しました');
+  return j;
+}
+function statsPayload(){
+  const s={}; let n=0,d=0;
+  for(const k in DIV){ const x=divStats(k); s[k]={d:x.d,n:x.n}; n+=x.n; d+=x.d; }
+  s.total={d,n}; return s;
+}
+const checkedIds=()=>Object.keys(store.c).filter(id=>!id.startsWith('c'));
+function queueSync(){
+  if(!API_URL||!share) return;
+  dirty=true; try{ localStorage.setItem(SHARE+':dirty','1'); }catch(e){}
+  clearTimeout(syncTimer); syncTimer=setTimeout(syncNow,2500);
+}
+async function syncNow(keepalive){
+  if(!API_URL||!share||!dirty||syncing) return;
+  if(navigator.onLine===false){ shareError='圏外のため、つながったら送ります'; renderSummary(); return; }
+  syncing=true; dirty=false;
+  try{
+    await api({action:'sync',code:share.code,checked:checkedIds(),stats:statsPayload()}, keepalive?{keepalive:true}:undefined);
+    share.lastSent=Date.now(); saveShare(); shareError='';
+    try{ if(!dirty) localStorage.removeItem(SHARE+':dirty'); }catch(e){}
+  }catch(e){ dirty=true; shareError=e.message; if(/コード/.test(e.message)){ share=null; saveShare(); } }
+  syncing=false; renderSummary(); renderShareBox();
+}
+async function registerCode(code,msgEl){
+  code=String(code||'').normalize('NFKC').trim().toUpperCase();
+  if(!code){ msgEl.textContent='受講生コードを入力してください'; return; }
+  if(!API_URL){ msgEl.textContent='まだ講師との共有の準備ができていません'; return; }
+  msgEl.textContent='確認中…';
+  try{
+    const j=await api({action:'register',code});
+    for(const id of (j.checked||[])) store.c[id]=1;   // 別の端末で付けたチェックも戻す
+    try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
+    share={code,name:j.name||'',since:Date.now()}; saveShare(); shareError='';
+    dirty=true; await syncNow();
+    render();
+  }catch(e){ msgEl.textContent=e.message; }
+}
+function shareHtml(compact){
+  if(!API_URL) return '';
+  if(share){
+    const t=share.lastSent?new Date(share.lastSent).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだ';
+    return `<div class="share on"><div><strong>講師と共有中</strong>${share.name?`（${esc(share.name)}さん）`:''}<br><span class="sm">最終送信：${t}${syncing||dirty?'（送信待ち）':''}${shareError?`<br><span class="warn">${esc(shareError)}</span>`:''}</span></div><button class="reset" id="shareStop">共有をやめる</button></div>`;
+  }
+  return `<div class="share"><strong>講師と進捗を共有する</strong><p class="sm">講師から受け取った「受講生コード」を入れると、チェックした内容が講師に届きます。別のスマホでも同じコードを入れると、続きから使えます。</p><div class="shrow"><input id="${compact?'codeIn2':'codeIn'}" placeholder="例：AB12CD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="受講生コード"><button class="reset" data-reg="${compact?'codeIn2':'codeIn'}">登録</button>${compact?'':'<button class="later" id="shareLater">あとで</button>'}</div><div class="sm warn" data-msg="${compact?'codeIn2':'codeIn'}" role="status"></div></div>`;
+}
+function renderShareBox(){
+  const box=document.getElementById('sharebox'); if(!box) return;
+  const show=API_URL && !share && !shareDismissed && state.mode==='action';
+  box.hidden=!show; box.innerHTML=show?shareHtml(false):'';
+}
+document.addEventListener('click',e=>{
+  const r=e.target.closest('[data-reg]'); if(r){ const id=r.dataset.reg; registerCode(document.getElementById(id).value, document.querySelector(`[data-msg="${id}"]`)); return; }
+  if(e.target.closest('#shareLater')){ shareDismissed=true; try{ localStorage.setItem(SHARE+':later','1'); }catch(_){} renderShareBox(); return; }
+  if(e.target.closest('#shareStop')){ share=null; saveShare(); try{ localStorage.removeItem(SHARE+':dirty'); }catch(_){} dirty=false; renderSummary(); return; }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing&&e.target.matches&&e.target.matches('#codeIn,#codeIn2')){ e.preventDefault(); document.querySelector(`[data-reg="${e.target.id}"]`).click(); } });
+addEventListener('online',()=>syncNow());
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') syncNow(true); });
+if(dirty) setTimeout(()=>syncNow(),1500);
 if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 
 // ---------- helpers ----------
@@ -362,8 +450,8 @@ function renderSummary(){
   let n=0,d=0; for(const k in DIV){ const s=divStats(k); n+=s.n; d+=s.d; }
   const p=n?Math.round(d/n*100):0;
   $('#sumtxt').innerHTML = `達成<b>${d}</b>件 / ${n}件中（${p}%）`;
-  const sync = 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
-  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + `<div class="sync">${sync}</div><div class="bk"><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
+  const sync = share ? 'チェックはこの端末と講師のスプレッドシートに保存されています。' : 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
+  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + shareHtml(true) + `<div class="sync">${sync}</div><div class="bk"><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
   $('#sumhead').setAttribute('aria-expanded', state.sumOpen);
   $('#sumdetail').hidden = !state.sumOpen;
 }
@@ -507,8 +595,8 @@ function renderMode(){
 }
 function render(){
   applyColors(document.documentElement, state.mode==='talk'?'talk':state.tab);
-  if(state.mode==='talk'){ renderMode(); renderTalk(); renderSummary(); return; }
-  renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); renderSheet(); renderMode(); renderTalk();
+  if(state.mode==='talk'){ renderMode(); renderTalk(); renderSummary(); renderShareBox(); return; }
+  renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); renderSheet(); renderMode(); renderTalk(); renderShareBox();
 }
 
 // ---------- events ----------

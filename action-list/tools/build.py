@@ -46,7 +46,6 @@ for k in ["visual","app","date"]:
     tot=sum(1 for c in out[k] for i in c["items"] if i["type"] not in("対象者のみ","カスタム"))
     print(k,[(c["name"],len(c["items"])) for c in out[k]],"counted",tot, file=sys.stderr)
 dest=sys.argv[2] if len(sys.argv)>2 else f"{D}/../data.json"
-json.dump(out,open(dest,"w",encoding="utf8"),ensure_ascii=False)
 
 # ---------- 話題リスト ----------
 TALK=[("ice","481702765","アイスブレイク＆関係作り","🧊"),("work","1607959523","仕事","💼"),("hobby","982862729","趣味","🎨"),("past","99621133","過去","📷")]
@@ -71,4 +70,27 @@ for key,g,name,icon in TALK:
     talk.append({"key":key,"name":name,"icon":icon,"sections":secs})
     print(name,sum(len(s["items"]) for s in secs),"topics",len(secs),"cats",file=sys.stderr)
 out["talk"]=talk
+
+# ---------- 安定したID ----------
+# 行の位置ではなく中身（部門・カテゴリ・グループ・タイトル）から決めるので、シートに行を足しても記録がずれない
+import hashlib, os
+def sid(prefix,*parts):
+    return prefix+hashlib.sha1("|".join(p or "" for p in parts).encode("utf8")).hexdigest()[:8]
+seen=set(); remap={}
+def assign(it,new):
+    base=new; i=2
+    while new in seen: new=f"{base}_{i}"; i+=1
+    seen.add(new); remap[it["id"]]=new; it["id"]=new
+for k,pre in (("visual","v"),("app","a"),("date","d")):
+    for c in out[k]:
+        for it in c["items"]: assign(it,sid(pre,c["name"],it.get("group"),it["title"]))
+for it in out["checklist"]: assign(it,sid("c",it["sec"],it["title"]))
+for l in out["talk"]:
+    for s in l["sections"]:
+        for it in s["items"]: assign(it,sid("t"+l["key"],s["name"],it["text"]))
+# 旧ID（行番号）→ 新ID。初回公開版の端末に残っているチェックを引き継ぐための固定表
+LEG=os.path.join(os.path.dirname(os.path.abspath(__file__)),"legacy_ids.json")
+if not os.path.exists(LEG):
+    json.dump(remap,open(LEG,"w",encoding="utf8"),ensure_ascii=False,indent=0)
+out["legacy"]=json.load(open(LEG,encoding="utf8"))
 json.dump(out,open(dest,"w",encoding="utf8"),ensure_ascii=False)
