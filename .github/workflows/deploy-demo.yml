@@ -1,0 +1,60 @@
+name: Deploy Demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: matching-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: matching-app
+        run: npm ci
+
+      - name: Prepare demo-only static build
+        working-directory: matching-app
+        run: |
+          mv 'src/app/(main)' src/app/_main
+          mv src/app/auth src/app/_auth
+          printf 'import type { NextConfig } from "next";\nconst nextConfig: NextConfig = {\n  output: "export",\n  trailingSlash: true,\n  basePath: "/-AI",\n  images: { unoptimized: true },\n};\nexport default nextConfig;\n' > next.config.ts
+
+      - name: Build static demo
+        working-directory: matching-app
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: matching-app/out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
