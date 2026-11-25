@@ -23,6 +23,7 @@
   --v:#2fa776; --v-soft:#dcefe6; --v-bg:#eef7f2;
   --a:#de8f0b; --a-soft:#f7e6c4; --a-bg:#fcf5e8;
   --d:#d9608f; --d-soft:#f7dbe6; --d-bg:#fdf1f5;
+  --t:#3b82d0; --t-soft:#dce9f8; --t-bg:#f0f6fd;
   --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -30,13 +31,15 @@
   --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
   --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
   --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
-  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}}
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22;
+  --t:#6eaaf0; --t-soft:#22344a; --t-bg:#19212b; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#171a1f; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#343943; --ring-track:#3a3f49;
   --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
   --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
   --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
-  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22;
+  --t:#6eaaf0; --t-soft:#22344a; --t-bg:#19212b; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -93,6 +96,35 @@ main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:backg
 .clear{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:0 9px;border-radius:99px;letter-spacing:.05em;border:2px solid var(--surface)}
 .done-mark{position:absolute;top:-10px;right:-8px;width:28px;height:28px;border-radius:50%;background:var(--c);display:grid;place-items:center;border:2px solid var(--surface)}
 .done-mark::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:10px}
+.modes button{border:0;border-radius:9px;padding:8px 4px;font-weight:800;font-size:14.5px;background:transparent;color:var(--muted)}
+.modes button[aria-selected="true"]{background:var(--surface);color:var(--c);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.ttabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:14px}
+.ttab{border:2px solid color-mix(in srgb,var(--c) 35%,transparent);background:var(--surface);border-radius:12px;padding:8px 2px;display:grid;justify-items:center;gap:1px;font-weight:800;font-size:13px;color:var(--c);line-height:1.25;text-align:center}
+.ttab .ico{font-size:22px}
+.ttab .n{font-size:11px;color:var(--muted);font-weight:700}
+.ttab[aria-selected="true"]{background:var(--c);color:#fff;border-color:var(--c)}
+.ttab[aria-selected="true"] .n{color:#fff;opacity:.85}
+.tbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
+.tchips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;margin-top:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tchips::-webkit-scrollbar{display:none}
+.tchip{flex:none;border:1.5px solid color-mix(in srgb,var(--c) 40%,var(--line));background:var(--surface);color:var(--ink);border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+.tchip[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
+.tpart{margin:18px 0 0;font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.06em}
+.tsec{display:grid;gap:8px;margin-top:16px}
+.tsec h3{margin:0;font-size:15px;color:var(--c);display:flex;align-items:center;gap:6px}
+.tsec h3 .rn{color:var(--muted)}
+.topic{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 10px 12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:start}
+.topic .say{font-weight:700;font-size:15.5px;line-height:1.5;word-break:break-word}
+.topic .say::before{content:"💬 ";font-size:13px}
+.topic .sub{grid-column:1/-1;display:grid;gap:6px}
+.topic .row{font-size:13px;line-height:1.6;white-space:pre-line;background:var(--bg);border-radius:8px;padding:6px 10px}
+.topic .row b{display:block;font-size:11.5px;color:var(--c);letter-spacing:.03em}
+.topic .src{grid-column:1/-1;font-size:11.5px;color:var(--muted);font-weight:700}
+.pick{border:2px dashed var(--c);border-radius:14px;padding:4px;margin-top:12px;display:grid;gap:6px}
+.pick .ph{display:flex;justify-content:space-between;align-items:center;padding:4px 8px 0;font-size:12.5px;font-weight:800;color:var(--c)}
+.pick .ph button{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.pick .topic{border:0}
 .empty{padding:40px 0;text-align:center;color:var(--muted);line-height:1.8}
 #results{padding-top:16px;display:grid;gap:10px}
 .rhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -186,7 +218,8 @@ body{margin:0;overscroll-behavior-y:none}
 </head>
 <body>
 
-<header class="top"><div class="wrap"><h1>恋愛アクションリスト</h1></div></header>
+<header class="top"><div class="wrap"><h1>恋愛アクションリスト</h1></div>
+<div class="wrap"><div class="modes" role="tablist" id="modes"><button role="tab" data-m="action" aria-selected="true">✅ アクション</button><button role="tab" data-m="talk" aria-selected="false">💬 話題リスト</button></div></div></header>
 <div class="install" id="install" hidden><div class="wrap"><p id="installText"></p><button id="installBtn" hidden>追加する</button><button class="x" id="installClose" aria-label="閉じる">×</button></div></div>
 <div class="restore" id="restore" hidden><div class="box"><strong>バックアップから復元</strong><p class="hint">「バックアップをコピー」で控えた文字をそのまま貼り付けてください。今のチェックは上書きされます。</p><textarea id="restoreText" aria-label="バックアップ"></textarea><div class="row"><button class="reset" id="restoreCancel">やめる</button><button class="reset" id="restoreOk">復元する</button></div></div></div>
 
@@ -195,8 +228,8 @@ body{margin:0;overscroll-behavior-y:none}
   <div class="wrap">
     <div class="tools">
       <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="アクションを検索（例：ひげ、香水、電話）" enterkeyhint="search" autocomplete="off"></label>
-      <div class="flabel">表示を絞り込む</div>
-      <div class="filters">
+      <div class="flabel" id="actFlabel">表示を絞り込む</div>
+      <div class="filters" id="actFilters">
         <label class="chk"><input type="checkbox" id="fUndone">未完了</label>
         <label class="chk"><input type="checkbox" id="fFav">お気に入り</label>
         <label class="chk"><input type="checkbox" id="fHideTarget">対象者のみを隠す</label>
@@ -206,6 +239,16 @@ body{margin:0;overscroll-behavior-y:none}
     <section class="hero" id="hero"></section>
     <div id="results" hidden aria-live="polite"></div>
     <div class="grid" id="grid"></div>
+    <section id="talk" hidden>
+      <div class="ttabs" role="tablist" id="ttabs"></div>
+      <div class="tbar">
+        <label class="chk"><input type="checkbox" id="tFav">★だけ表示</label>
+        <button class="reset" id="tRandom">🎲 ランダムに1つ</button>
+      </div>
+      <div class="tchips" id="tchips"></div>
+      <div id="tpick"></div>
+      <div id="tlist"></div>
+    </section>
   </div>
 </main>
 
@@ -239,12 +282,12 @@ const ICON = {
 // デート前チェック: per-date checklist, shown as an extra tile, not counted in progress
 const CHECK_CAT = {name:'デート前チェック', check:true, items:DATA.checklist.map(x=>({id:x.id,title:x.title,sec:x.sec,type:'',note:'',links:{}}))};
 
-const state = {tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set(), closed:new Set()};
+const state = {mode:'action', talkKey:'ice', talkCat:'', talkFav:false, pick:null, tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set(), closed:new Set()};
 let store = {c:{}, f:{}};
 
 // ---------- persistence: this device's browser storage ----------
 const LS='love-action-list-v1';
-try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; }catch(e){}
+try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; const m=localStorage.getItem(LS+':mode'); if(m==='talk') state.mode='talk'; const tk=localStorage.getItem(LS+':talk'); if(tk) state.talkKey=tk; }catch(e){}
 let syncState='local';
 function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
 if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
@@ -288,7 +331,7 @@ function ring(p,n){
   const r=37, C=2*Math.PI*r, off=C*(1-p);
   return `<svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="7"/>${n?`<circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--c)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>`:''}</svg>`;
 }
-function applyColors(el,k){ const c=DIV[k].c; el.style.setProperty('--c',`var(${c})`); el.style.setProperty('--csoft',`var(${c}-soft)`); el.style.setProperty('--cbg',`var(${c}-bg)`); }
+function applyColors(el,k){ const c=k==='talk'?'--t':DIV[k].c; el.style.setProperty('--c',`var(${c})`); el.style.setProperty('--csoft',`var(${c}-soft)`); el.style.setProperty('--cbg',`var(${c}-bg)`); }
 
 // ---------- render ----------
 function renderTabs(){
@@ -384,6 +427,11 @@ function renderResults(){
     }
     if(cnt){ total+=cnt; body+=`<section class="rdiv" style="--c:var(${DIV[k].c})"><h3><span aria-hidden="true">${DIV[k].icon}</span>${DIV[k].label}<span class="rn">${cnt}件</span></h3>${sec}</section>`; }
   }
+  if(ts.length && !state.fav){
+    let tb='', tc=0;
+    for(const l of TALK) for(const s of l.sections) for(const it of s.items) if(tmatch(it,l,s)){ if(tc<20) tb+=topicHtml(it, l.name+'トーク・'+s.name); tc++; }
+    if(tc){ body+=`<section class="rdiv" style="--c:var(--t)"><h3><span aria-hidden="true">💬</span>話題リスト<span class="rn">${tc}個</span></h3>${tb}${tc>20?`<button class="reset" id="toTalk" style="justify-self:center">話題リストで残り${tc-20}個を見る</button>`:''}</section>`; }
+  }
   const what = ts.length ? `「${esc(state.q)}」の検索結果` : 'お気に入り';
   const extra = ts.length&&state.fav ? '（お気に入りのみ）' : '';
   let html=`<div class="rhead"><div><strong>${what}</strong>${extra}<span class="rtotal">${total}件</span></div><button class="reset" id="clearSearch">${ts.length?'検索をやめる':'一覧に戻る'}</button></div>`;
@@ -393,9 +441,74 @@ function renderResults(){
   }
   $('#results').innerHTML=html+body;
 }
+// ---------- 話題リスト ----------
+const TALK=DATA.talk||[];
+const TINDEX=new Map();
+function thay(it,l,s){
+  let h=TINDEX.get(it.id); if(h) return h;
+  let raw=[it.text,it.memo,it.reply,it.next,it.reverse,s.name,s.part,l.name,'話題 トーク'].join(' ');
+  for(const w in READ) if(raw.includes(w)) raw+=' '+READ[w];
+  h=norm(raw); TINDEX.set(it.id,h); return h;
+}
+const tmatch=(it,l,s)=>{ const ts=terms(); if(!ts.length) return true; const h=thay(it,l,s); return ts.every(x=>h.includes(x)); };
+function topicHtml(it,src){
+  const fav=!!store.f[it.id];
+  const rows=[];
+  if(it.reply) rows.push(`<div class="row"><b>想定される返答</b>${esc(it.reply)}</div>`);
+  if(it.next) rows.push(`<div class="row"><b>切り返し・話題展開</b>${esc(it.next)}</div>`);
+  if(it.reverse) rows.push(`<div class="row"><b>逆質問されたら</b>${esc(it.reverse)}</div>`);
+  if(it.memo) rows.push(`<div class="row"><b>使い方メモ</b>${esc(it.memo)}</div>`);
+  return `<div class="topic" data-tid="${it.id}"><div class="say">${esc(it.text)}</div><button class="fav" data-tact="fav" aria-pressed="${fav}" aria-label="お気に入り">${STAR}</button>${rows.length?`<div class="sub">${rows.join('')}</div>`:''}${src?`<div class="src">${esc(src)}</div>`:''}</div>`;
+}
+function talkCount(l){ return l.sections.reduce((a,s)=>a+s.items.length,0); }
+function renderTalk(){
+  const on=state.mode==='talk';
+  $('#talk').hidden=!on;
+  if(!on) return;
+  const searching=terms().length>0;
+  $('#ttabs').hidden=searching; $('#tchips').hidden=searching; $('#tRandom').hidden=searching;
+  $('#ttabs').innerHTML=TALK.map(l=>`<button class="ttab" role="tab" data-k="${l.key}" aria-selected="${state.talkKey===l.key}"><span class="ico" aria-hidden="true">${l.icon}</span>${esc(l.name.replace('＆','＆​'))}<span class="n">${talkCount(l)}個</span></button>`).join('');
+  const L=TALK.find(l=>l.key===state.talkKey)||TALK[0]; if(!L){ $('#tlist').innerHTML=''; return; }
+  // chips
+  $('#tchips').innerHTML=`<button class="tchip" data-cat="" aria-pressed="${!state.talkCat}">すべて</button>`+L.sections.map(s=>`<button class="tchip" data-cat="${esc(s.name)}" aria-pressed="${state.talkCat===s.name}">${esc(s.name)}</button>`).join('');
+  // pick
+  $('#tpick').innerHTML = state.pick && !searching ? (()=>{ const f=findTopic(state.pick); return f?`<div class="pick"><div class="ph"><span>🎲 今日の話題（${esc(f.l.name)}・${esc(f.s.name)}）</span><span><button id="tRepick" aria-label="別の話題">↻</button><button id="tPickClose" aria-label="閉じる">×</button></span></div>${topicHtml(f.it)}</div>`:''; })() : '';
+  let html='', total=0;
+  const lists = searching ? TALK : [L];
+  for(const l of lists){
+    let lpart=null, body='';
+    for(const s of l.sections){
+      if(!searching && state.talkCat && s.name!==state.talkCat) continue;
+      const items=s.items.filter(it=>(!state.talkFav||store.f[it.id]) && tmatch(it,l,s));
+      if(!items.length) continue;
+      total+=items.length;
+      if(s.part!==lpart && l.sections.some(x=>x.part!==s.part)){ body+=`<div class="tpart">${esc(s.part==='話題'?'基本の話題':s.part)}</div>`; }
+      lpart=s.part;
+      body+=`<div class="tsec"><h3>${esc(s.name)}<span class="rn">${items.length}個</span></h3>${items.map(it=>topicHtml(it)).join('')}</div>`;
+    }
+    if(body) html+= searching ? `<section class="rdiv" style="--c:var(--t)"><h3><span aria-hidden="true">${l.icon}</span>${esc(l.name)}<span class="rn">${body.split('class="topic"').length-1}個</span></h3>${body}</section>` : body;
+  }
+  if(searching) html=`<div class="rhead" style="margin-top:14px"><div><strong>「${esc(state.q)}」の話題</strong><span class="rtotal">${total}個</span></div><button class="reset" id="clearSearch2">検索をやめる</button></div>`+html;
+  if(!total) html+=`<div class="empty">${state.talkFav?'★を付けた話題はまだありません。<br>使いたい話題の ★ を押すと、ここに集まります。':'見つかりませんでした。言葉を短くするか、ひらがなで試してみてください。'}</div>`;
+  $('#tlist').innerHTML=html;
+}
+function findTopic(id){ for(const l of TALK) for(const s of l.sections) for(const it of s.items) if(it.id===id) return {l,s,it}; return null; }
+function randomTopic(){
+  const L=TALK.find(l=>l.key===state.talkKey); if(!L) return;
+  let pool=[]; for(const s of L.sections) if(!state.talkCat||s.name===state.talkCat) for(const it of s.items) if(!state.talkFav||store.f[it.id]) if(it.id!==state.pick) pool.push(it.id);
+  if(!pool.length) return; state.pick=pool[Math.floor(Math.random()*pool.length)];
+}
+function renderMode(){
+  const talk=state.mode==='talk';
+  document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===state.mode));
+  $('#actFlabel').hidden=talk; $('#actFilters').hidden=talk; $('#sumbar').hidden=talk;
+  $('#q').placeholder= talk ? '話題を検索（例：カフェ、看護師、地元）' : 'アクションを検索（例：ひげ、香水、電話）';
+  if(talk){ ['#tabs','#hero','#grid','#results'].forEach(s=>$(s).hidden=true); }
+}
 function render(){
-  applyColors(document.documentElement,state.tab);
-  renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); renderSheet();
+  applyColors(document.documentElement, state.mode==='talk'?'talk':state.tab);
+  if(state.mode==='talk'){ renderMode(); renderTalk(); renderSummary(); return; }
+  renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); renderSheet(); renderMode(); renderTalk();
 }
 
 // ---------- events ----------
@@ -403,7 +516,7 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b
 $('#grid').addEventListener('click',e=>{ const t=e.target.closest('.tile'); if(!t) return; state.open=+t.dataset.i; state.notes.clear(); renderSheet(); });
 $('#sumhead').addEventListener('click',()=>{ state.sumOpen=!state.sumOpen; renderSummary(); });
 let qTimer=null, composing=false;
-const runSearch=()=>{ state.q=$('#q').value.trim(); state.notes.clear(); state.closed.clear(); renderGrid(); renderResults(); };
+const runSearch=()=>{ state.q=$('#q').value.trim(); state.notes.clear(); state.closed.clear(); if(state.mode==='talk'){ renderTalk(); } else { renderGrid(); renderResults(); } };
 $('#q').addEventListener('compositionstart',()=>{ composing=true; });
 $('#q').addEventListener('compositionend',()=>{ composing=false; clearTimeout(qTimer); qTimer=setTimeout(runSearch,60); });
 $('#q').addEventListener('input',()=>{ clearTimeout(qTimer); qTimer=setTimeout(runSearch, composing?250:120); });
@@ -412,7 +525,20 @@ $('#q').closest('form,label').addEventListener('submit',e=>e.preventDefault());
 $('#fUndone').addEventListener('change',e=>{ state.undone=e.target.checked; renderGrid(); renderResults(); });
 $('#fFav').addEventListener('change',e=>{ state.fav=e.target.checked; renderGrid(); renderResults(); });
 $('#fHideTarget').addEventListener('change',e=>{ state.hideTarget=e.target.checked; renderGrid(); renderResults(); });
+$('#modes').addEventListener('click',e=>{ const b=e.target.closest('button[data-m]'); if(!b) return; state.mode=b.dataset.m; try{localStorage.setItem(LS+':mode',state.mode);}catch(_){} state.open=null; render(); window.scrollTo({top:0}); });
+$('#talk').addEventListener('click',e=>{
+  const tt=e.target.closest('.ttab'); if(tt){ state.talkKey=tt.dataset.k; state.talkCat=''; state.pick=null; try{localStorage.setItem(LS+':talk',state.talkKey);}catch(_){} renderTalk(); return; }
+  const ch=e.target.closest('.tchip'); if(ch){ state.talkCat=ch.dataset.cat; renderTalk(); return; }
+  if(e.target.closest('#tRandom')||e.target.closest('#tRepick')){ randomTopic(); renderTalk(); return; }
+  if(e.target.closest('#tPickClose')){ state.pick=null; renderTalk(); return; }
+  if(e.target.closest('#clearSearch2')){ $('#q').value=''; runSearch(); return; }
+  if(talkFav(e)) renderTalk();
+});
+$('#tFav').addEventListener('change',e=>{ state.talkFav=e.target.checked; state.pick=null; renderTalk(); });
+function talkFav(e){ const b=e.target.closest('[data-tact="fav"]'); if(!b) return false; const id=b.closest('.topic').dataset.tid; if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); return true; }
 $('#results').addEventListener('click',e=>{
+  if(e.target.closest('#toTalk')){ state.mode='talk'; render(); window.scrollTo({top:0}); return; }
+  if(talkFav(e)){ renderResults(); return; }
   if(e.target.closest('#clearSearch')){ $('#q').value=''; $('#fFav').checked=false; state.fav=false; runSearch(); window.scrollTo({top:0}); return; }
   if(handleAct(e)){ renderTabs(); renderHero(); renderGrid(); renderResults(); renderSummary(); }
 });

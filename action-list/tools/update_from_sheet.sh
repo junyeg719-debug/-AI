@@ -7,7 +7,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
 BASE="https://docs.google.com/spreadsheets/d/$ID"
 # gid: ビジュアル・マインド / アプリ / 音声添削 / デート前チェック
-for g in 350199277 1816342099 1591807583 1420343896; do
+# 話題リスト: アイスブレイク / 仕事 / 趣味 / 過去
+for g in 350199277 1816342099 1591807583 1420343896 481702765 1607959523 982862729 99621133; do
   curl -fsSL -o "$TMP/$g.csv" "$BASE/gviz/tq?tqx=out:csv&gid=$g"
   curl -fsSL -o "$TMP/h_$g.html" "$BASE/htmlview/sheet?headers=true&gid=$g"
 done
