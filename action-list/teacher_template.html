@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#344055">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>受講生の進捗（講師用）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: sticky header, controls row, one card per student (bars for the three divisions); tap opens a full-screen per-category breakdown */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --ink:#2f3542; --muted:#79808c; --line:#e1e5ea; --navy:#344055;
+  --v:#2fa776; --a:#de8f0b; --d:#d9608f; --warn:#d0473a; --warn-bg:#fdecea; --ok-bg:#e6f5ee;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#16191e; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#353a44; --navy:#2a3446;
+  --v:#4cc792; --a:#f0a53a; --d:#ee7fab; --warn:#ff8a7a; --warn-bg:#3a2522; --ok-bg:#1e3329; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16191e; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#353a44; --navy:#2a3446;
+  --v:#4cc792; --a:#f0a53a; --d:#ee7fab; --warn:#ff8a7a; --warn-bg:#3a2522; --ok-bg:#1e3329; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55}
+.wrap{max-width:820px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--v);outline-offset:2px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--navy);color:#fff}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--navy)}
+header .wrap{display:flex;align-items:center;gap:10px;min-height:56px}
+header h1{margin:0;font-size:17px;flex:1}
+header button{border:1.5px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:700}
+.btn{border:1.5px solid var(--navy);background:var(--surface);color:var(--navy);border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px}
+:root[data-theme="dark"] .btn{color:var(--ink);border-color:var(--muted)}
+.btn.primary{background:var(--navy);color:#fff}
+.login{max-width:460px;margin:40px auto;background:var(--surface);border-radius:14px;padding:20px;display:grid;gap:12px}
+.login input,.ctl input,.ctl select{border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);width:100%}
+.hint{font-size:13px;color:var(--muted);margin:0;line-height:1.7}
+.err{color:var(--warn);font-size:13px;min-height:1em}
+.ctl{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding-block:14px 6px}
+.ctl select{width:auto}
+.sum{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted);padding-bottom:6px}
+.sum b{color:var(--ink);font-variant-numeric:tabular-nums}
+.list{display:grid;gap:10px;padding-bottom:40px}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px;text-align:left;width:100%}
+.card.stale{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))}
+.top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.top .nm{font-weight:800;font-size:16px}
+.top .tc{font-size:12px;color:var(--muted)}
+.top .pct{margin-left:auto;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums}
+.when{font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--ok-bg)}
+.when.bad{background:var(--warn-bg);color:var(--warn)}
+.bars{display:grid;gap:5px}
+.bar{display:grid;grid-template-columns:5.6em 1fr 4.2em;gap:8px;align-items:center;font-size:12.5px;font-variant-numeric:tabular-nums}
+.bar .tr{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar .fl{height:100%;border-radius:99px}
+.bar span:last-child{text-align:right;color:var(--muted)}
+.empty{padding:40px 0;text-align:center;color:var(--muted);line-height:1.8}
+.detail{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.detail header .wrap{min-height:60px}
+.dbody{padding-block:14px 60px;display:grid;gap:14px}
+.div h2{margin:0 0 6px;font-size:16px;display:flex;justify-content:space-between;border-bottom:3px solid var(--c);color:var(--c);padding-bottom:3px}
+.cat{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;margin-top:8px;overflow:hidden}
+.cat summary{list-style:none;display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;cursor:pointer;font-weight:700}
+.cat summary::-webkit-details-marker{display:none}
+.cat summary .n{font-variant-numeric:tabular-nums;color:var(--muted)}
+.cat summary .n.full{color:var(--c)}
+.cat ul{margin:0;padding:0 12px 10px;list-style:none;display:grid;gap:4px}
+.cat li{font-size:13.5px;display:grid;grid-template-columns:1.4em 1fr;gap:4px;line-height:1.5}
+.cat li.done{color:var(--muted)}
+.cat li .m{color:var(--c);font-weight:800}
+.cat li.todo .m{color:var(--line)}
+@media (max-width:480px){.ctl{grid-template-columns:1fr 1fr}.ctl input{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>受講生の進捗</h1><button id="reload" hidden>更新</button><button id="logout" hidden>ログアウト</button></div></header>
+
+<main class="wrap">
+  <section class="login" id="login">
+    <strong>講師用パスワードを入力してください</strong>
+    <p class="hint">スプレッドシートのメニュー「アクションリスト」→「講師用パスワードを表示」で確認できます。</p>
+    <input id="key" type="password" autocomplete="current-password" aria-label="講師用パスワード">
+    <button class="btn primary" id="go">表示する</button>
+    <div class="err" id="err" role="status"></div>
+  </section>
+
+  <section id="app" hidden>
+    <div class="ctl">
+      <input id="q" type="search" placeholder="名前・コードで探す" aria-label="名前・コードで探す">
+      <select id="teacher" aria-label="担当講師"></select>
+      <select id="sort" aria-label="並び順">
+        <option value="stale">更新が古い順</option>
+        <option value="low">達成率が低い順</option>
+        <option value="high">達成率が高い順</option>
+        <option value="name">名前順</option>
+      </select>
+    </div>
+    <div class="sum" id="sum"></div>
+    <div class="list" id="list"></div>
+  </section>
+</main>
+<div class="detail" id="detail" hidden></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const DATA=JSON.parse(document.getElementById('data').textContent);
+const API_URL='__API_URL__';
+const DIV={visual:{label:'ビジュアル',c:'--v'},app:{label:'アプリ',c:'--a'},date:{label:'デート',c:'--d'}};
+const STALE_DAYS=7;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const KEY='love-action-teacher-key';
+let key=''; try{ key=localStorage.getItem(KEY)||''; }catch(e){}
+let rows=[], view={q:'',teacher:'',sort:'stale'};
+
+async function api(body){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),redirect:'follow'});
+  let j; try{ j=await r.json(); }catch(e){ throw new Error('通信に失敗しました'); }
+  if(!j.ok) throw new Error(j.error||'エラーが発生しました'); return j;
+}
+// 進捗はチェック済みIDから、このページのデータで計算し直す（シートの項目が増えても数がずれない）
+function stats(checked){
+  const set=new Set(checked||[]); const out={}; let n=0,d=0;
+  for(const k in DIV){ let kn=0,kd=0; for(const c of DATA[k]) for(const it of c.items){ kn++; if(set.has(it.id)) kd++; } out[k]={n:kn,d:kd,p:kn?Math.round(kd/kn*100):0}; n+=kn; d+=kd; }
+  out.total={n,d,p:n?Math.round(d/n*100):0}; return out;
+}
+const daysAgo=t=>t?Math.floor((Date.now()-new Date(t).getTime())/86400000):Infinity;
+function whenLabel(t){
+  if(!t) return '<span class="when bad">未登録</span>';
+  const d=daysAgo(t); const s=new Date(t).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const rel=d===0?'今日':d===1?'昨日':`${d}日前`;
+  return `<span class="when${d>=STALE_DAYS?' bad':''}">${rel}（${s}）</span>`;
+}
+async function load(){
+  $('#err').textContent='読み込み中…';
+  try{
+    const j=await api({action:'list',key});
+    rows=(j.students||[]).map(s=>({...s, st:stats(s.checked)}));
+    try{ localStorage.setItem(KEY,key); }catch(e){}
+    $('#login').hidden=true; $('#app').hidden=false; $('#reload').hidden=false; $('#logout').hidden=false; $('#err').textContent='';
+    const ts=[...new Set(rows.map(r=>r.teacher).filter(Boolean))].sort();
+    $('#teacher').innerHTML='<option value="">担当：全員</option>'+ts.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    $('#teacher').value=ts.includes(view.teacher)?view.teacher:''; if(!ts.length) $('#teacher').hidden=true;
+    renderList();
+  }catch(e){ $('#login').hidden=false; $('#app').hidden=true; $('#err').textContent=e.message; }
+}
+function renderList(){
+  const q=view.q.normalize('NFKC').toLowerCase();
+  let list=rows.filter(r=>(!view.teacher||r.teacher===view.teacher)&&(!q||(r.name+' '+r.code).normalize('NFKC').toLowerCase().includes(q)));
+  const by={stale:(a,b)=>daysAgo(b.updatedAt)-daysAgo(a.updatedAt)||a.st.total.p-b.st.total.p, low:(a,b)=>a.st.total.p-b.st.total.p, high:(a,b)=>b.st.total.p-a.st.total.p, name:(a,b)=>a.name.localeCompare(b.name,'ja')};
+  list.sort(by[view.sort]);
+  const stale=list.filter(r=>daysAgo(r.updatedAt)>=STALE_DAYS).length;
+  const avg=list.length?Math.round(list.reduce((s,r)=>s+r.st.total.p,0)/list.length):0;
+  $('#sum').innerHTML=`<span>受講生 <b>${list.length}</b>人</span><span>平均達成率 <b>${avg}%</b></span><span>${STALE_DAYS}日以上更新なし・未登録 <b>${stale}</b>人</span>`;
+  $('#list').innerHTML=list.length?list.map(r=>`<button class="card${daysAgo(r.updatedAt)>=STALE_DAYS?' stale':''}" data-code="${esc(r.code)}">
+    <div class="top"><span class="nm">${esc(r.name||'（名前なし）')}</span><span class="tc">${esc(r.code)}${r.teacher?' ・ 担当 '+esc(r.teacher):''}${r.status?' ・ '+esc(r.status):''}</span><span class="pct">${r.st.total.p}%</span></div>
+    <div>${whenLabel(r.updatedAt)}</div>
+    <div class="bars">${Object.keys(DIV).map(k=>`<div class="bar"><span>${DIV[k].label}</span><div class="tr"><div class="fl" style="width:${r.st[k].p}%;background:var(${DIV[k].c})"></div></div><span>${r.st[k].d}/${r.st[k].n}</span></div>`).join('')}</div>
+  </button>`).join(''):'<div class="empty">該当する受講生はいません。<br>スプレッドシートの「受講生」シートに名前を入れ、メニューからコードを発行してください。</div>';
+}
+function openDetail(code){
+  const r=rows.find(x=>x.code===code); if(!r) return;
+  const set=new Set(r.checked||[]);
+  let html='';
+  for(const k in DIV){
+    html+=`<section class="div" style="--c:var(${DIV[k].c})"><h2><span>${DIV[k].label}部門</span><span>${r.st[k].d}/${r.st[k].n}（${r.st[k].p}%）</span></h2>`;
+    for(const c of DATA[k]){
+      const d=c.items.filter(it=>set.has(it.id)).length, n=c.items.length;
+      html+=`<details class="cat"><summary><span>${esc(c.name)}</span><span class="n${d===n?' full':''}">${d}/${n}</span></summary><ul>${c.items.map(it=>{ const ok=set.has(it.id); return `<li class="${ok?'done':'todo'}"><span class="m">${ok?'✓':'○'}</span><span>${esc((it.group?it.group.split('\n')[0]+'：':'')+it.title)}</span></li>`; }).join('')}</ul></details>`;
+    }
+    html+='</section>';
+  }
+  $('#detail').innerHTML=`<header><div class="wrap"><button id="back" aria-label="戻る">← 戻る</button><h1>${esc(r.name||r.code)}　${r.st.total.p}%</h1></div></header><div class="wrap dbody"><div>${whenLabel(r.updatedAt)}</div>${html}</div>`;
+  $('#detail').hidden=false; $('#detail').scrollTop=0; document.body.style.overflow='hidden';
+}
+$('#go').addEventListener('click',()=>{ key=$('#key').value.trim(); if(key) load(); });
+$('#key').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#go').click(); } });
+$('#reload').addEventListener('click',load);
+$('#logout').addEventListener('click',()=>{ key=''; try{localStorage.removeItem(KEY);}catch(e){} rows=[]; $('#app').hidden=true; $('#login').hidden=false; $('#reload').hidden=true; $('#logout').hidden=true; $('#key').value=''; });
+$('#q').addEventListener('input',e=>{ view.q=e.target.value; renderList(); });
+$('#teacher').addEventListener('change',e=>{ view.teacher=e.target.value; renderList(); });
+$('#sort').addEventListener('change',e=>{ view.sort=e.target.value; renderList(); });
+$('#list').addEventListener('click',e=>{ const c=e.target.closest('.card'); if(c) openDetail(c.dataset.code); });
+$('#detail').addEventListener('click',e=>{ if(e.target.closest('#back')){ $('#detail').hidden=true; document.body.style.overflow=''; } });
+if(!API_URL){ $('#login').innerHTML='<strong>まだ準備中です</strong><p class="hint">Google Apps Script を公開して、そのURLをアプリの設定（config.json）に入れると使えるようになります。</p>'; }
+else if(key){ load(); }
+})();
+</script>
+</body>
+</html>

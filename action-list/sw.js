@@ -1,5 +1,5 @@
 // オフラインでも開けるようにするキャッシュ。index.html を更新したら VERSION を上げる。
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'action-list-' + VERSION;
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
@@ -15,8 +15,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (req.mode === 'navigate') {
     // ページ本体はネット優先（最新版を取りに行き、圏外ならキャッシュ）
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return res; })
-      .catch(() => caches.match('./index.html')));
+    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
+      .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html'))));
     return;
   }
   if (url.origin === location.origin || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com')) {
