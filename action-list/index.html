@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#22262d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="アクション">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>恋愛アクションリスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: app shell — header, filters, color-coded division tabs, progress card, 3-col tile grid, sticky summary bar; tiles open a full-screen action sheet */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --ink:#2f3542; --muted:#7a808c; --line:#e3e6e2; --ring-track:#e6e8e4;
+  --navy:#344055; --gold:#e3a008; --star:#f2b01e;
+  --v:#2fa776; --v-soft:#dcefe6; --v-bg:#eef7f2;
+  --a:#de8f0b; --a-soft:#f7e6c4; --a-bg:#fcf5e8;
+  --d:#d9608f; --d-soft:#f7dbe6; --d-bg:#fdf1f5;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171a1f; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#343943; --ring-track:#3a3f49;
+  --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
+  --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
+  --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171a1f; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#343943; --ring-track:#3a3f49;
+  --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
+  --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
+  --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--c,var(--v));outline-offset:2px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:center;min-height:56px;position:relative}
+header.top h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.04em;color:var(--ink)}
+.tools{display:grid;gap:10px;padding-block:14px 6px}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:0 12px}
+.search input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:var(--ink);padding:11px 0;outline:none}
+.search svg{flex:none;color:var(--muted)}
+.flabel{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em}
+.filters{display:flex;flex-wrap:wrap;gap:6px 18px}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:15px;user-select:none;cursor:pointer}
+.chk input{appearance:none;width:22px;height:22px;border:2px solid var(--muted);border-radius:6px;margin:0;display:grid;place-items:center;background:var(--surface);cursor:pointer}
+.chk input:checked{background:var(--navy);border-color:var(--navy)}
+.chk input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:14px;border-bottom:3px solid var(--c);}
+.tab{--tc:var(--v);border:2px solid color-mix(in srgb,var(--tc) 45%,transparent);border-bottom:0;border-radius:12px 12px 0 0;background:var(--surface);padding:8px 4px 6px;display:grid;justify-items:center;gap:2px;color:var(--tc);font-weight:800;font-size:16px;position:relative;transition:transform .15s}
+.tab .ico{font-size:22px;line-height:1}
+.tab .pct{font-size:11px;font-weight:700;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 9%,var(--surface));border-width:3px;border-bottom:0;margin-bottom:-3px;padding-bottom:9px}
+.tab[data-k="visual"]{--tc:var(--v)}.tab[data-k="app"]{--tc:var(--a)}.tab[data-k="date"]{--tc:var(--d)}
+main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:background .2s}
+.hero{display:flex;align-items:center;gap:18px;background:var(--csoft);border-radius:14px;padding:18px;margin-top:18px}
+.hero .medal{flex:none;width:96px;height:96px;border-radius:50%;background:color-mix(in srgb,var(--c) 22%,var(--surface));display:grid;place-items:center;font-size:46px}
+.hero .body{flex:1;min-width:0}
+.hero h2{margin:0 0 8px;font-size:17px;color:var(--c);font-weight:800}
+.count{display:inline-flex;align-items:baseline;gap:4px;background:var(--surface);border-radius:8px;padding:6px 14px;font-variant-numeric:tabular-nums}
+.count b{font-size:40px;line-height:1.1;color:var(--c);font-weight:800}
+.count .u{font-size:13px;color:var(--c)}
+.count .t{font-size:30px;font-weight:500;margin-left:4px}
+.count .u2{font-size:13px}
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px}
+.bar .track{flex:1;height:10px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,var(--surface));overflow:hidden}
+.bar .fill{height:100%;border-radius:99px;background:var(--c);transition:width .4s ease}
+.bar span{font-size:14px;font-variant-numeric:tabular-nums;min-width:3em;text-align:right}
+
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px}
+.tile{position:relative;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:16px 6px 12px;display:grid;justify-items:center;gap:6px;text-align:center;transition:transform .12s, box-shadow .12s}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 16px -10px rgba(0,0,0,.35)}
+.tile:active{transform:scale(.98)}
+.ringbox{position:relative;width:84px;height:84px}
+.ringbox svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ringbox .em{position:absolute;inset:10px;border-radius:50%;background:color-mix(in srgb,var(--c) 8%,var(--surface));display:grid;place-items:center;font-size:32px}
+.tile .nm{font-weight:800;font-size:15px;line-height:1.3;min-height:2.6em;display:grid;place-items:center;padding:0 2px}
+.tile .fr{font-size:17px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tile .fr b{color:var(--c);font-weight:800}
+.ribbon{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:2px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.04em}
+.clear{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:0 9px;border-radius:99px;letter-spacing:.05em;border:2px solid var(--surface)}
+.done-mark{position:absolute;top:-10px;right:-8px;width:28px;height:28px;border-radius:50%;background:var(--c);display:grid;place-items:center;border:2px solid var(--surface)}
+.done-mark::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.empty{padding:40px 0;text-align:center;color:var(--muted)}
+
+.sumbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:3px solid var(--c);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -6px 20px -14px rgba(0,0,0,.4)}
+.sumbar .wrap{padding-block:10px}
+.sumhead{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:0;text-align:left}
+.sumhead .coin{font-size:34px;flex:none}
+.sumhead .tx{flex:1;min-width:0}
+.sumhead .l1{font-weight:700;font-size:15px}
+.sumhead .l2{font-size:13px}
+.sumhead .l2 b{font-size:26px;color:var(--gold);font-weight:800;margin:0 4px;font-variant-numeric:tabular-nums}
+.chev{flex:none;transition:transform .2s;color:var(--navy)}
+:root[data-theme="dark"] .chev{color:var(--muted)}
+.sumhead[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.sumdetail{display:grid;gap:8px;padding-top:10px}
+.sumrow{display:grid;grid-template-columns:7.5em 1fr 4.5em;align-items:center;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
+.sumrow .track{height:8px;border-radius:99px;background:var(--ring-track);overflow:hidden}
+.sumrow .fill{height:100%;border-radius:99px}
+.sumrow span:last-child{text-align:right}
+.sync{font-size:11px;color:var(--muted)}
+
+/* sheet */
+.sheet[hidden]{display:none!important}
+.sheet{position:fixed;inset:0;z-index:40;background:var(--cbg);display:flex;flex-direction:column;animation:up .22s ease}
+@keyframes up{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.tile,.tab,.bar .fill{transition:none}}
+.sheet-h{background:var(--surface);border-bottom:3px solid var(--c);padding-top:env(safe-area-inset-top,0px)}
+.sheet-h .wrap{display:flex;align-items:center;gap:10px;min-height:60px}
+.back{border:0;background:none;padding:8px;margin-left:-8px;display:grid;place-items:center;color:var(--c)}
+.sheet-h .t{flex:1;min-width:0}
+.sheet-h .t small{display:block;font-size:12px;color:var(--c);font-weight:700}
+.sheet-h .t strong{font-size:18px}
+.sheet-h .fr{font-variant-numeric:tabular-nums;font-weight:800;color:var(--c);font-size:18px}
+.sheet-b{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheet-b .wrap{padding-block:14px calc(40px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+.group{font-size:13px;font-weight:700;color:var(--muted);padding:10px 2px 0;white-space:pre-line;line-height:1.5}
+.act{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;padding:12px;align-items:start}
+.act.is-done{border-color:color-mix(in srgb,var(--c) 45%,var(--line));background:color-mix(in srgb,var(--c) 6%,var(--surface))}
+.tick{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--c);background:var(--surface);display:grid;place-items:center;padding:0;margin-top:1px}
+.act.is-done .tick{background:var(--c)}
+.act.is-done .tick::after{content:"";width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-2px) rotate(45deg)}
+.act .main{min-width:0}
+.act .ttl{font-weight:700;white-space:pre-line;line-height:1.45;word-break:break-word}
+.act.is-done .ttl{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--c) 70%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;border:1.5px solid currentColor;line-height:1.6}
+.chip.t-単発{color:var(--c)}
+.chip.t-習慣{color:var(--a)}
+.chip.t-対象者のみ,.chip.t-カスタム{color:var(--muted)}
+.chip.imp{color:#fff;background:#e0533d;border-color:#e0533d}
+.more{border:0;background:none;padding:0;font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;display:inline-flex;align-items:center;gap:4px}
+.note{white-space:pre-line;font-size:13.5px;color:var(--ink);background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px;word-break:break-word;line-height:1.65}
+.lnks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lnk{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--surface));border-radius:8px;padding:5px 10px;text-decoration:none;max-width:100%}
+.lnk span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav{border:0;background:none;padding:4px;color:var(--line);display:grid;place-items:center}
+.fav[aria-pressed="true"]{color:var(--star)}
+.fav svg{width:24px;height:24px}
+.reset{justify-self:end;border:1.5px solid var(--c);color:var(--c);background:var(--surface);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+@media (max-width:420px){
+  .grid{gap:9px}.ringbox{width:72px;height:72px}.ringbox .em{font-size:27px}.tile .nm{font-size:13.5px}
+  .hero{gap:12px;padding:14px}.hero .medal{width:72px;height:72px;font-size:34px}.count b{font-size:34px}.count .t{font-size:24px}
+  .tab{font-size:14px}
+}
+
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;overscroll-behavior-y:none}
+.bk{display:flex;flex-wrap:wrap;gap:8px}
+.bkmsg{font-size:12px;color:var(--c);min-height:1em}
+.install{background:var(--navy);color:#fff;font-size:13.5px}
+.install .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.install p{margin:0;flex:1;min-width:0;line-height:1.5}
+.install button{border:0;border-radius:99px;padding:6px 14px;font-weight:700;background:#fff;color:#344055;flex:none}
+.install .x{background:transparent;color:#fff;padding:6px;font-size:18px;line-height:1}
+.restore{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}
+.restore .box{background:var(--surface);border-radius:14px;padding:16px;width:min(100%,460px);display:grid;gap:10px}
+.restore textarea{width:100%;min-height:120px;font:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink)}
+.restore .row{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap"><h1>恋愛アクションリスト</h1></div></header>
+<div class="install" id="install" hidden><div class="wrap"><p id="installText"></p><button id="installBtn" hidden>追加する</button><button class="x" id="installClose" aria-label="閉じる">×</button></div></div>
+<div class="restore" id="restore" hidden><div class="box"><strong>バックアップから復元</strong><p class="hint">「バックアップをコピー」で控えた文字をそのまま貼り付けてください。今のチェックは上書きされます。</p><textarea id="restoreText" aria-label="バックアップ"></textarea><div class="row"><button class="reset" id="restoreCancel">やめる</button><button class="reset" id="restoreOk">復元する</button></div></div></div>
+
+
+<main id="main">
+  <div class="wrap">
+    <div class="tools">
+      <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="アクションを検索" autocomplete="off"></label>
+      <div class="flabel">表示を絞り込む</div>
+      <div class="filters">
+        <label class="chk"><input type="checkbox" id="fUndone">未完了</label>
+        <label class="chk"><input type="checkbox" id="fFav">お気に入り</label>
+        <label class="chk"><input type="checkbox" id="fHideTarget">対象者のみを隠す</label>
+      </div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section class="hero" id="hero"></section>
+    <div id="results"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</main>
+
+<div class="sumbar" id="sumbar">
+  <div class="wrap">
+    <button class="sumhead" id="sumhead" aria-expanded="false" aria-controls="sumdetail">
+      <span class="coin" aria-hidden="true">🏅</span>
+      <span class="tx"><span class="l1">あなたの魅力アップ 全体の達成度</span><br><span class="l2" id="sumtxt"></span></span>
+      <svg class="chev" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="sumdetail" id="sumdetail" hidden></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden></div>
+
+<script id="data" type="application/json">{"visual": [{"name": "面談後対応", "items": [{"id": "v1", "type": "単発", "title": "アプリ講師と撮影日の日程調整をする", "note": "アプリ講師とやり取りをして撮影日を決めましょう！\n※初回面談から5週間～7週間で予約をしてください。", "links": {}}, {"id": "v2", "type": "対象者のみ", "title": "オンラインコース生対象のオフ会に参加する", "note": "▼対象者：オフ会に参加されたことのない方\nグループワーク後に開催される、仲間ができてモチベーションも上がる学びの多い会です。\nLINEメニューより予約可能です。（満員の場合参加できません。）", "links": {}}, {"id": "v3", "type": "習慣", "title": "マッチングアプリ「Omiai」をインストールして最低1回デートに行く", "note": "予行演習として、ビジュアル・マインド部門の期間中に「Omiai」で最低1回デートに行きましょう！\n目的は課題を早めに見つけて、次の改善につなげることです。\nデートを成功させる必要はありません。\n\n▼進め方は次の通りです。\n１アプリをインストールする（Omiaiアプリ）\n２プロフィールを作成する（Omiai運用の手引き）\n３マッチしたお相手の方とメッセージをはじめ、デートの日程調整する（メッセージの仕方）", "links": {"Omiaiアプリ": "https://fb.omiai-jp.com/", "Omiai運用の手引き": "https://attraction-univ.com/omiaikobetsu/", "メッセージの仕方": "https://attraction-univ.com/message/"}}, {"id": "v4", "type": "単発", "title": "デート報告を1回提出する", "note": "Omiaiのデート後は、”必ず”「デート報告」をご回答ください！\n講師が状況を把握しやすくなり、より的確なフィードバックができるため、成長や結果につながりやすくなります。\n※LINEのメニュー「デート報告（音声添削）」よりご回答可能です。", "links": {}}]}, {"name": "ビジュアル全般", "items": [{"id": "v5", "type": "単発", "title": "ビジュアル・マインド部門の重要性を理解する", "note": "ビジュアル・マインド部門の重要性", "links": {"ビジュアル・マインド部門の重要性": "https://attraction-univ.com/mindpart/"}}, {"id": "v6", "type": "習慣", "group": "オンラインコースのSeason1の音声学習を各7回実施\n※魅力的な男性のマインドが手に入ります", "title": "1-1男性本能のコントロール", "note": "", "links": {"1-1男性本能のコントロール": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "v7", "type": "習慣", "group": "オンラインコースのSeason1の音声学習を各7回実施\n※魅力的な男性のマインドが手に入ります", "title": "1-2恋愛の「7つの幻想」", "note": "", "links": {"1-2恋愛の「7つの幻想」": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "v8", "type": "習慣", "group": "オンラインコースのSeason1の音声学習を各7回実施\n※魅力的な男性のマインドが手に入ります", "title": "1-3成果を掴む男のマインドセット", "note": "", "links": {"1-3成果を掴む男のマインドセット": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "v9", "type": "習慣", "group": "オンラインコースのSeason1の音声学習を各7回実施\n※魅力的な男性のマインドが手に入ります", "title": "1-4選択と集中", "note": "", "links": {"1-4選択と集中": "https://myfm.jp/cpBT47?mode=example"}}]}, {"name": "スキンケア", "items": [{"id": "v10", "type": "単発", "title": "スキンケア・美容マニュアルを読む", "note": "スキンケア・美容マニュアル", "links": {"スキンケア・美容マニュアル": "https://attraction-univ.com/skincare-manuel/"}}, {"id": "v11", "type": "単発", "title": "スキンケア用品をすべて購入", "note": "マイルドジェルクレンジング（大容量）\n泡洗顔フォーム・敏感肌用\n化粧水・敏感肌用・高保湿タイプ（大容量）\n乳液・敏感肌用・高保湿タイプ（大容量）\n無印良品日焼け止めミルク\n※既に使っているものがある場合は継続して使ってOKです。\n持っていない物や肌に合わない場合は、上記を購入してください。", "links": {"マイルドジェルクレンジング（大容量）": "https://www.muji.com/jp/ja/store/cmdty/detail/4550583941185", "泡洗顔フォーム・敏感肌用": "https://www.muji.com/jp/ja/store/cmdty/detail/4550584935947", "化粧水・敏感肌用・高保湿タイプ（大容量）": "https://www.muji.com/jp/ja/store/cmdty/detail/%E5%8C%96%E7%B2%A7%E6%B0%B4%E3%83%BB%E6%95%8F%E6%84%9F%E8%82%8C%E7%94%A8%E3%83%BB%E9%AB%98%E4%BF%9D%E6%B9%BF%E3%82%BF%E3%82%A4%E3%83%97%EF%BC%88%E5%A4%A7%E5%AE%B9%E9%87%8F%EF%BC%89/4548076448341", "乳液・敏感肌用・高保湿タイプ（大容量）": "https://www.muji.com/jp/ja/store/cmdty/detail/%E4%B9%B3%E6%B6%B2%E3%83%BB%E6%95%8F%E6%84%9F%E8%82%8C%E7%94%A8%E3%83%BB%E9%AB%98%E4%BF%9D%E6%B9%BF%E3%82%BF%E3%82%A4%E3%83%97%EF%BC%88%E5%A4%A7%E5%AE%B9%E9%87%8F%EF%BC%89/4547315258550", "無印良品日焼け止めミルク": "https://www.muji.com/jp/ja/store/cmdty/detail/4550584464959"}}, {"id": "v12", "type": "習慣", "title": "スキンケアを7日継続", "note": "※初回面談の翌日から開始しましょう\nスキンケアの手順\n朝：洗顔→化粧水→乳液→日焼け止め\n夜：クレンジング→洗顔→化粧水→乳液\n未達成の日があってもリセットせず、その日はカウントせずに翌日から続きとして数えてください。", "links": {}}, {"id": "v13", "type": "習慣", "title": "スキンケアを14日継続", "note": "", "links": {}}, {"id": "v14", "type": "習慣", "title": "スキンケアを21日継続", "note": "", "links": {}}, {"id": "v15", "type": "習慣", "title": "ジャンクフードを禁止を7日間継続", "note": "ジャンクフードとは\n・ファストフード\n・揚げ物\n・お菓子\n・コンビニ弁当\n・ラーメン等、糖質の多い食事", "links": {}}, {"id": "v16", "type": "習慣", "title": "肉魚米卵を食べるのを7日間意識（週に3回以上）", "note": "おすすめ食事内容\n・肉：鶏むね肉やささみ、脂身の少ない牛肉がベスト\n・魚：食品売り場に並んでいる一般的なものであればOKです\n具体例は食事マニュアルを参照", "links": {"食事マニュアル": "https://attraction-univ.com/16662-2/"}}, {"id": "v17", "type": "習慣", "title": "水1日1リットルを7日継続", "note": "※初回面談の翌日から開始しましょう\n未達成の日があってもリセットせず、その日はカウントせずに翌日から続きとして数えてください。", "links": {}}, {"id": "v18", "type": "習慣", "title": "水1日1リットルを14日継続", "note": "", "links": {}}, {"id": "v19", "type": "習慣", "title": "水1日1リットルを21日継続", "note": "", "links": {}}]}, {"name": "身だしなみ", "items": [{"id": "v20", "type": "習慣", "title": "鏡を見る(毎日)", "note": "自分の外見に目を向ける習慣を作るため", "links": {}}, {"id": "v21", "type": "習慣", "title": "ヒゲ、頬毛、首毛を処理する(毎日)", "note": "動画を参考に処理する\n敏感肌向けの髭剃りの仕方\n髭剃り後は化粧水、乳液で保湿する", "links": {"敏感肌向けの髭剃りの仕方": "https://youtu.be/CWpIDBRUn20?si=yzQQaMJpKbnqtw-S"}}, {"id": "v22", "type": "習慣", "title": "口腔ケア用品を購入し使用する(毎日)", "note": "おすすめ口腔ケア用品を購入して使用しましょう\n・歯磨き粉\n・マウスウォッシュ\n・歯間ブラシ\n・舌ブラシ\n・ブレスケア", "links": {"歯磨き粉": "https://clinica.lion.co.jp/product/advantage.htm", "マウスウォッシュ": "https://www.weltecnet.co.jp/products/concool/concoolf/", "舌ブラシ": "https://amzn.to/44mKHJL", "ブレスケア": "https://www.kobayashi.co.jp/seihin/bc/index.html"}}, {"id": "v23", "type": "習慣", "title": "唇のケアをおこなう(毎日)", "note": "皮むけしている場合、女性から減点されます\nリップではなく根本治療ができる以下のアイテムがおすすめ\nおすすめアイテム", "links": {"おすすめアイテム": "https://www.amazon.co.jp/%E8%96%AC%E7%94%A8%E3%83%AA%E3%83%83%E3%83%97-3-5g-%E9%AB%98%E4%BF%9D%E6%B9%BF-%E4%B9%BE%E7%87%A5%E5%AF%BE%E7%AD%96-%E3%82%AA%E3%83%AA%E3%82%B8%E3%83%8A%E3%83%AB%E3%83%AD%E3%82%B4%E5%85%A5%E3%82%8A%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8H/dp/B0GVMBKF5Q/ref=sr_1_3_sspa?dib=eyJ2IjoiMSJ9.DRJ8jfqexewlyFLyQM0K2DXcp1OCka9aoj-4PJk6QgAEvoYzgwIfkJ8_7rFds0x3gREjc3cPvlqeXRAH_5amDmTbfMiehRqienXrfUY0qclH6n2YbrViTpNHeN-8SVKlw_f4sbSXgK_0Mjmq8I8TQrIsU0o3m9bncY3COnX73_XznhG9JcZhTzTXAGWkL-yEX3m6pzALTgusDJXvLb4jELIaPMBQFB3AN5koLyddFl7CJ7W5F-PtFuU8XnG1yVAufnSwZ8XZMHVXpSvLuKypv602L0qjnhitV04-nQnZnV4.eddwB-TFnuwg6DVQ0v9IGWb67LNl5FsV1uN9YYa9BkU&dib_tag=se&keywords=%E3%83%A1%E3%83%87%E3%82%A3%E3%82%AB%E3%83%AB%E3%83%AA%E3%83%83%E3%83%97&qid=1786252324&sr=8-3-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1"}}, {"id": "v24", "type": "習慣", "title": "腕毛と指毛を処理する(1週間に1回)", "note": "動画を参考に処理する\n処理方法", "links": {"処理方法": "https://youtu.be/10qtoZfkxUs?feature=shared"}}, {"id": "v25", "type": "習慣", "title": "爪を切る(1週間に1回)", "note": "おすすめ爪削り\nみるみる削れるネイルグレーター\n手のひらを顔にむけたときに、爪が指先から見えないようにしましょう", "links": {"みるみる削れるネイルグレーター": "https://amzn.asia/d/3MIFX5u"}}, {"id": "v26", "type": "習慣", "title": "鼻毛をカットする(1週間に1回)", "note": "以下の電動カッターがおすすめ\nおすすめ電動鼻毛カッター", "links": {"おすすめ電動鼻毛カッター": "https://amzn.asia/d/01zoaFVb"}}, {"id": "v27", "type": "単発", "title": "眉サロンを予約", "note": "※すでに通っている方は前回から1ヶ月後\nメンズ専用の眉サロンであればOK。迷う場合は以下がおすすめ\nTOKYOBABE（東京）\nCREA（大阪）", "links": {"CREA（大阪）": "https://eyebrow-crea.com/"}}, {"id": "v28", "type": "習慣", "title": "歯科クリニックの定期クリーニング予約（3ヶ月に1回）", "note": "3ヶ月に1回、保険診療適用のクリーニングを実施", "links": {}}, {"id": "v29", "type": "習慣", "title": "眉毛を整える(週1回)", "note": "眉サロンで整えた後、新たに生えてきたところを処理すればOK\n参考：眉毛の黄金比\nおすすめ眉ケアアイテム\nGATSBY(ギャツビー)GBメンズアイブローキット", "links": {"GATSBY(ギャツビー)GBメンズアイブローキット": "https://amzn.to/466Yy6f"}}, {"id": "v30", "type": "単発", "title": "小物の写真を講師に共有する", "note": "小物ケース、財布、スマホ、バッグ、その他デート時にバッグに入れるもの", "links": {}}, {"id": "v31", "type": "単発", "title": "匂い対策をする", "note": "女性から臭いと感じられると一発でNG判定されてしまいます\n以下の対策を実施しましょう\n①汗対策アイテムを購入し日常的に使用する\nデオナチュレ男ソフトストーンW\nGATSBY(ギャツビー)【医薬部外品】アイスデオドラントボディペーパーアイスシトラス\nひんやりシャツシャワーストロングレベルMAX\n②毎朝シャワー、時間がある場合はデート前シャワーを浴びる\n③洗濯物は中干しを避ける", "links": {"デオナチュレ男ソフトストーンW": "https://amzn.asia/d/c4kEaYr", "GATSBY(ギャツビー)【医薬部外品】アイスデオドラントボディペーパーアイスシトラス": "https://amzn.asia/d/gpuQ21w"}}]}, {"name": "ヘアセット", "items": [{"id": "v32", "type": "単発", "title": "ヘアセットマニュアルを読み込む", "note": "ヘアセットマニュアル", "links": {"ヘアセットマニュアル": "https://attraction-univ.com/%E3%80%90%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E9%99%90%E5%AE%9A%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E3%80%91%E3%83%98%E3%82%A2%E3%82%BB%E3%83%83%E3%83%88%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2/"}}, {"id": "v33", "type": "習慣", "title": "ヘアセットの練習を7日継続", "note": "※ヘアセットマニュアルの講師におすすめされたヘアスタイルの動画を見ながら、ドライ・セットの練習してください\n※初回面談の翌日から開始してください！\n未達成の日があってもリセットせず、その日はカウントせずに翌日から続きとして数えてください。", "links": {"ヘアセットマニュアル": "https://attraction-univ.com/%E3%80%90%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E9%99%90%E5%AE%9A%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E3%80%91%E3%83%98%E3%82%A2%E3%82%BB%E3%83%83%E3%83%88%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2/"}}, {"id": "v34", "type": "習慣", "title": "ヘアセットの練習を14日継続", "note": "", "links": {}}, {"id": "v35", "type": "習慣", "title": "ヘアセットの練習を21日継続", "note": "", "links": {}}, {"id": "v36", "type": "単発", "title": "美容室に行く", "note": "※アプリ撮影当日に行っていただきます。魅力大おすすめの美容室を選びましょう。\n撮影日前に美容院に行く場合は、必ず講師に相談をしてください！\n髪が以下の長さに達していない人は行かなくてOK\n参考画像\n※完了予定日はアプリ撮影日にしてください", "links": {"参考画像": "https://drive.google.com/file/d/1_M7oOMGPZNXX9JPSg1ekfJdaZXxrRmER/view?usp=sharing"}}, {"id": "v37", "type": "単発", "title": "ヘアセットを美容師に教えてもらい、動画を撮らせていただく\n（髪が短い方はセットのみ美容室で行う）", "note": "ヘアセットの習慣付けおよび正しいヘアセットのやり方を知るため\n※セット時の参考動画は美容師ものを優先してください\n※完了予定日はアプリ撮影日にしてください", "links": {}}, {"id": "v38", "type": "単発", "title": "ヘアスタイリング剤を購入する", "note": "カンタンうるつや（ヘアワックス）\nカンタンニュアンス（ヘアバーム）\nカンタンさらけあ（ヘアミルク）\nカンタンさらつや（ヘアオイル）\nカンタンかちっと（ヘアスプレー）\n※ヘアワックスとヘアバームは髪型に合わせてどちらかを購入する\n　→ヘアワックス：アップバング、パーママッシュ、パーマセンターパート\n　→ヘアバーム：ナチュラルセンターパート、マッシュ", "links": {"カンタンうるつや（ヘアワックス）": "https://kantanseries.com/urutsuya/", "カンタンニュアンス（ヘアバーム）": "https://kantanseries.com/nuance/", "カンタンさらけあ（ヘアミルク）": "https://kantanseries.com/saracare/", "カンタンさらつや（ヘアオイル）": "https://kantanseries.com/saratsuya/"}}, {"id": "v39", "type": "単発", "title": "美容師おすすめのヘアセットアイテムを購入する", "note": "※完了予定日はアプリ撮影日にしてください", "links": {}}, {"id": "v40", "type": "単発", "title": "不要な服、靴を処分する", "note": "以下の条件に当てはまる場合は処分してください\n・1年以上着用していない物\n・使い古したアイテム（汚れたスニーカー、ヨレヨレのシャツ）\n・スキニーパンツ", "links": {}}, {"id": "v41", "type": "単発", "title": "全身鏡を購入する", "note": "頭からつま先まで映る鏡を購入すること\nニトリや無印良品でも売っています", "links": {}}]}, {"name": "ファッション", "items": [{"id": "v42", "type": "単発", "title": "ユニクロの下着・肌着・靴下を購入する", "note": "タンクトップ（黒）\n半袖Ⅴネック（肌色）\nボクサーブリーフ（黒）\nエアリズムボクサーブリーフ（黒）\n靴下（黒）", "links": {"タンクトップ": "https://www.uniqlo.com/jp/ja/products/E464310-000/00?colorDisplayCode=09&sizeDisplayCode=004", "半袖Ⅴネック": "https://www.uniqlo.com/jp/ja/products/E454311-000/00?colorDisplayCode=00&sizeDisplayCode=004", "ボクサーブリーフ": "https://www.uniqlo.com/jp/ja/products/E464311-000/00?colorDisplayCode=09&sizeDisplayCode=004&utm_medium=paid_shopping&utm_source=google&utm_campaign=25fw_nenmatsu-nenshi&utm_content=ca&gad_source=1&gad_campaignid=23372045663&gbraid=0AAAAADSFKzZjqOrwstj3oyoA74Itzb67p&gclid=CjwKCAiA09jKBhB9EiwAgB8l-O1od8bnSlY46_HJjrcfz0wH4l-ElakCSGE9KzmibrgJWAlPc10DShoCG-8QAvD_BwE", "エアリズムボクサーブリーフ": "https://www.uniqlo.com/jp/ja/products/E454326-000/00?colorDisplayCode=09&sizeDisplayCode=005", "靴下": "https://www.uniqlo.com/jp/ja/products/E461025-000/00?colorDisplayCode=09&sizeDisplayCode=023"}}, {"id": "v43", "type": "単発", "title": "【重要】個別指導おすすめの基本ファッションを購入する", "note": "【個別指導】おすすめ基本ファッション\n※アプリ撮影で着用いただくため、必ずご購入ください！！\n・グループワークまでに必ず全て揃えて下さい\n・店頭でご購入下さい（サイズ感のミスがなくなります）", "links": {"【個別指導】おすすめ基本ファッション": "https://attraction-univ.com/basefashion/"}}, {"id": "v44", "type": "単発", "title": "【重要】サポート講師おすすめファッションで1コーデ揃える", "note": "サポート講師おすすめファッション（2026夏）\n※こちらもアプリ撮影で着用いただくため、必ず購入ください！！\n・アプリ写真撮影までに必ず1コーデ揃えて下さい。", "links": {}}, {"id": "v45", "type": "単発", "title": "購入した服の着用写真を講師に送る", "note": "2コーデ分を必ず送ってください！！\n・基本ファッション\n・サポート講師おすすめファッション", "links": {}}]}, {"name": "動作・仕草", "items": [{"id": "v46", "type": "習慣", "title": "食事中の自分の動きを撮影して講師に共有", "note": "ノンバーバルの向上のため、自分を客観視し不自然な部分を明確化しましょう\n女性は男性全体の雰囲気を見る傾向があるので、手元、表情含めて全体を映してください\n→サポート講師に共有しましょう", "links": {}}, {"id": "v47", "type": "単発", "title": "講師より共有された初回面談の動画を視聴", "note": "あなた自身の不自然な動きを明確化しましょう\n他人と会話しているときのノンバーバルがデート中のノンバーバルです\n講師と比較して、改善点を３つ講師に送りましょう！\n\n※初回面談の動画のURLは面談終了後サポート講師が本タスクに貼付します", "links": {}}]}, {"name": "マインド全般", "items": [{"id": "v48", "type": "単発", "title": "マインドパートの資料を理解する", "note": "マインドパート資料 必ず内容を確認してください。", "links": {"マインドパート資料": "https://attraction-univ.com/mindpart/"}}, {"id": "v49", "type": "習慣", "title": "日報を毎晩LINEで送る（21日間継続）", "note": "マインドパートの核になります。21日間継続しましょう！\n▼記載内容\n①自己採点\n②できたことリスト\n③その日、何があったかどんな事を思ったか", "links": {}}, {"id": "v50", "type": "習慣", "title": "7時間睡眠をとる（14日間継続）", "note": "半年間は走り切れるようなコンディションキープが重要です。\nデートでも１００%の力を発揮できるように、疲れをためないようにしましょう！", "links": {}}, {"id": "v51", "type": "習慣", "title": "起床後、日光を浴びる（14日間継続）", "note": "朝日はメンタルに大きな影響を与えます。\nカーテンを開けて寝る事もおすすめです。", "links": {}}, {"id": "v52", "type": "習慣", "title": "1日15分歩く（14日間継続）", "note": "通勤での徒歩でも代替可能です。\n休日でも15分は歩くようにしましょう。", "links": {}}, {"id": "v53", "type": "対象者のみ", "title": "部屋を掃除する", "note": "▼対象者：部屋が人を呼べる状態出ない方\n散らかった部屋は、脳に過剰な情報処理を強いるため、疲労やストレスを感じやすくなり\n結果として、集中力、生産性、やる気、自己肯定感の低下や、精神的不安定さに繋がります", "links": {}}, {"id": "v54", "type": "対象者のみ", "title": "ソープに行く※最重要", "note": "▼対象者：童貞の方\n事前にソープに行くことで、性行為に対する不安感を軽減して、デート中に女性を積極的にホテルに誘うことができます", "links": {}}, {"id": "v55", "type": "対象者のみ", "title": "女性用AVの視聴", "note": "▼対象者：童貞の方もしくは、経験が浅い方向け\nhttps://x.gd/yiCVg\n女性向けのAVを視聴し、CLまでの流れと女性のニーズを理解しましょう！", "links": {}}, {"id": "v56", "type": "対象者のみ", "title": "勃起薬を購入する", "note": "▼対象者：童貞の方、一度でも行為中に勃起しなかった経験のある方\n初めてのホテルで緊張して、勃起できずセックスができない場合があるため、病院に行き勃起薬を購入しましょう", "links": {}}, {"id": "v57", "type": "対象者のみ", "title": "コンタクトを購入※最重要", "note": "▼対象者：メガネをかけている方（例外なし）\n眼科で視力を測ってコンタクトを処方してもらい、その後通販サイトで購入すると節約になります", "links": {}}, {"id": "v58", "type": "対象者のみ", "title": "肌荒れしている人は皮膚科予約※最重要", "note": "▼対象者：肌荒れをしている方（もしくは講師から指摘があった場合）", "links": {}}, {"id": "v59", "type": "対象者のみ", "title": "アップルウォッチを購入\n（アンドロイドユーザーはPixelWatch）", "note": "▼対象者：金銭的余裕のある方\n中古でOKです。予算は2万円程度\nファッションアイテムとしても優秀で、バレずに高音質で録音できます\n※PixelWatchの場合「簡単ボイスレコーダー」というアプリのインストールが必要です", "links": {}}, {"id": "v60", "type": "対象者のみ", "title": "”髭”と”もみあげ”脱毛のカウンセリングに行く※最重要", "note": "▼対象者：青髭が濃い・ヒゲ剃りのダメージで肌荒れを指摘された方\nもみあげが耳の穴の位置よりも長い方\nクリニック選びの条件\n・通いやすく、安価\n・大手の医療脱毛\n・GentleMaxPro（ヤグレーザー）が置いてある", "links": {}}, {"id": "v61", "type": "対象者のみ", "title": "ボディメイクを行う", "note": "▼対象者：適正体重以上の方（測り方）\n・ボディメイクマニュアル参考に、トレーニング内容、食事内容、体重を毎日講師に報告\nボディメイクマニュアル", "links": {"測り方": "https://www.med.or.jp/forest/health/eat/11.html", "ボディメイクマニュアル": "https://attraction-univ.com/%e3%80%90%e5%80%8b%e5%88%a5%e6%8c%87%e5%b0%8e%e9%99%90%e5%ae%9a%e3%82%b3%e3%83%b3%e3%83%86%e3%83%b3%e3%83%84%e3%80%91%e3%83%a2%e3%83%86%e3%82%8b%e7%94%b7%e3%81%ab%e3%81%aa%e3%82%8b%e3%81%9f%e3%82%81/"}}, {"id": "v62", "type": "対象者のみ", "title": "ホクロ除去のカウンセリングに行く", "note": "ホクロが顔に複数あって目立つ方\n大きなホクロがあって目立つ方", "links": {}}, {"id": "v63", "type": "対象者のみ", "title": "埋没二重整形のカウンセリングに行く※最重要", "note": "▼対象者：一重や二重の方\nおすすめの形：末広型\nお勧めクリニック：水の森クリニック、城元クリニックetc..\nお勧め医師：形成外科専門医、美容外科医の経験7年以上\n　※医師と相談の上、自己責任で施術ください。", "links": {}}, {"id": "v64", "type": "対象者のみ", "title": "AGA治療のカウンセリングを予約", "note": "▼対象者：薄毛の方（もしくは講師から指摘があった場合）\nAGAクリニックでカウンセリングを受け、医師が治療が必要だと判断した場合は「プロペシア」「ミノキシジル」を処方してもらう\n詳しい対策は、薄毛マニュアルを確認してください", "links": {"薄毛マニュアル": "https://attraction-univ.com/%e3%80%90%e5%80%8b%e5%88%a5%e6%8c%87%e5%b0%8e%e3%80%91%e8%96%84%e6%af%9b%e3%83%9e%e3%83%8b%e3%83%a5%e3%82%a2%e3%83%ab/"}}, {"id": "v65", "type": "対象者のみ", "title": "声量改善", "note": "▼対象者：講師より指摘を受けた場合\n声が届かないのは、会話内容以前の問題なので、超重要になります！\n練習方法※毎日練習をしてください！", "links": {"練習方法": "https://youtube.com/shorts/RUqk2fveJNY?si=oEOzZqHT1zpB-VXc"}}, {"id": "v66", "type": "対象者のみ", "title": "オススメ香水を購入", "note": "▼対象者：習慣・単発タスクが終わった方\nおすすめ香水紹介動画\n動画内のお好みの香水をご購入下さい\n迷う場合は予算が一番低いSHIROWHITELILY（4.050円）でOKです", "links": {}}]}], "app": [{"name": "マインド", "items": [{"id": "a1", "type": "単発", "title": "アプリ部門の重要性とマインドを理解をする", "note": "アプリ部門の重要性とマインド\n重要なことが記載されています。必ず内容を確認してください。", "links": {}}, {"id": "a2", "type": "習慣", "group": "オンラインコースのSeason2の音声学習7回行う。\n※魅力的な男性のマインドが手に入ります", "title": "2-1恋愛と生殖のしくみ", "note": "", "links": {"2-1恋愛と生殖のしくみ": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "a3", "type": "習慣", "group": "オンラインコースのSeason2の音声学習7回行う。\n※魅力的な男性のマインドが手に入ります", "title": "2-2女性本能が求める男の要素", "note": "", "links": {"2-2女性本能が求める男の要素": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "a4", "type": "習慣", "group": "オンラインコースのSeason2の音声学習7回行う。\n※魅力的な男性のマインドが手に入ります", "title": "2-3恋愛関係になるまでの「3つの壁」", "note": "", "links": {"2-3恋愛関係になるまでの「3つの壁」": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "a5", "type": "習慣", "group": "オンラインコースのSeason2の音声学習7回行う。\n※魅力的な男性のマインドが手に入ります", "title": "2-4恋愛に対する2つの恐怖", "note": "", "links": {"2-4恋愛に対する2つの恐怖": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "a6", "type": "習慣", "title": "思考の矢印について理解する", "note": "デートで重要な思考の矢印について\n「失敗したくない」「嫌われたくない」と自分のことばかり考えているとデートはうまくいきません。\nデートをするうえで、大切なことが書かれています。", "links": {}}]}, {"name": "アプリ運用", "items": [{"id": "a7", "type": "単発", "title": "【超重要！】アプリ講師と撮影日の日程調整を行う ※最重要", "note": "1.撮影日の決定\n2.美容室の予約\n3.お手持ちのファッションの共有\n4.撮影場所に行く\n5.写真撮影", "links": {}}, {"id": "a8", "type": "単発", "title": "アプリプロフィールの作成", "note": "プロフィール作成マニュアル\n※分からないことは必ずアプリ講師に確認してください。", "links": {}}, {"id": "a9", "type": "習慣", "title": "アプリ運用マニュアルを読み\nアプリ講師の指示に従い運用を開始する", "note": "運用マニュアル\n※分からないことは必ずアプリ講師に確認してください。", "links": {}}, {"id": "a10", "type": "習慣", "title": "メッセージテンプレートを読み込む", "note": "メッセージテンプレート\nマニュアル通りに送ってOKです。\n※分からないことは必ずアプリ講師に確認してください。", "links": {"メッセージテンプレート": "https://attraction-univ.com/%E3%80%90%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E3%80%91%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB/"}}, {"id": "a11", "type": "習慣", "title": "デートが決まったら、必ずカレンダーに「日程」「名前」「デート回数」を登録する", "note": "デートのスケジュール管理は無理なく女修行をするうえで重要です。", "links": {}}, {"id": "a12", "type": "単発", "title": "アプリ部門を卒業した際の「プロフィール設定」をサポート講師にすべて送る ※最重要", "note": "指導内容が正しく実行できているか確認をします。\n成果を出すために重要なアクションなので必ず実行しましょう！\n\n▼スクショの内容\n・プロフィール写真と並び順\n・プロフィール文章\n・プロフィール設定条件（例：年収、身長など）", "links": {}}, {"id": "a13", "type": "単発", "title": "デートに繋がらなかったメッセージのスクショをサポート講師に送る", "note": "デートに繋がらない理由がメッセージにないかサポート講師が確認します", "links": {}}, {"id": "a14", "type": "単発", "title": "アプリ開始から1週間以内に、\n女の子1人のメッセージ内容を写真に撮ってサポート講師に送る", "note": "指導内容が正しく実行できているか、改善点はあるかを確認します。\n成果を出すために重要なアクションなので必ず実行しましょう！", "links": {}}, {"id": "a15", "type": "単発", "title": "LINEプロフィールをアプリ講師の指示通りに設定する", "note": "LINEの画像やプロフィール文を違和感のないものにすることで、デートの接続率が上がります。", "links": {}}]}, {"name": "導線準備", "items": [{"id": "a16", "type": "単発", "title": "初回デートのコースを2つ決める", "note": "条件\nL字or横並びの席\n60分～90分が目安\n注意事項\n・Googleマップにピン留め\n・実際に利用してみる（メニュー、席配置、料理の提供時間、決済方法などを把握する）\n・判断に困ればサポート講師に共有\n参考：デート導線リスト", "links": {"デート導線リスト": "https://www.notion.so/20f091b1e21780e1b414da4d9ff2c668"}}, {"id": "a17", "type": "単発", "title": "2回目デートのコースを2つ決める", "note": "条件\n1軒目：L字or横並びの席（60分～90分）\n2軒目：カラオケ、バーなどの横並びで身体接触しやすいお店（30分～60分）\nホテル：基本的にラブホテル（安価で予約不要なため）（2時間～3時間）\n注意事項\n・Googleマップにピン留め\n・実際に利用してみる（メニュー、席配置、料理の提供時間、決済方法などを把握する）\n参考：デート導線リスト・ハッピーホテル", "links": {"デート導線リスト": "https://www.notion.so/20f091b1e21780e1b414da4d9ff2c668", "ハッピーホテル": "https://happyhotel.jp/"}}, {"id": "a18", "type": "単発", "title": "1軒目→2軒目→ホテルまでの全導線を歩く", "note": "移動でもたつくと女性から減点される可能性があります。\n必ず歩いて確認をしましょう！", "links": {}}]}, {"name": "会話準備", "items": [{"id": "a19", "type": "習慣", "title": "電話マニュアルを「3回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "a20", "type": "習慣", "title": "初回デートマニュアルを「3回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "a21", "type": "習慣", "title": "2回目デートマニュアルを「3回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "a22", "type": "習慣", "title": "会話準備リストを作成してサポート講師にチェック依頼をする\n（デートを重ねるたびに更新する）", "note": "会話準備リストを作成してサポート講師にチェック依頼をする\n本資料に以下のシートが用意されています。\n・基本会話リスト\n・応用会話リスト\n※実際に声に出してアウトプットしましょう！", "links": {}}]}, {"name": "対象者のみ", "items": [{"id": "a23", "type": "カスタム", "title": "オンラインコース生対象のオフ会に参加する", "note": "オンラインコース生対象のオフ会に参加しましょう\nLINEのメニューから予約可能です。", "links": {}}, {"id": "a24", "type": "カスタム", "title": "アプリメッセージの教科書を理解する※上級者向け", "note": "余裕がある場合は減点のないメッセージを目指すために確認しましょう！\nアプリメッセージの教科書", "links": {"アプリメッセージの教科書": "https://attraction-univ.com/messagenokyoukasho/"}}]}], "date": [{"name": "マインド", "items": [{"id": "d1", "type": "単発", "title": "音声添削部門の重要性とマインドを理解をする", "note": "音声添削部門の重要性とマインド\n重要なことが記載されています。必ず内容を確認してください。", "links": {"音声添削部門の重要性とマインド": "https://attraction-univ.com/%E3%80%90%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E3%80%91%E9%9F%B3%E5%A3%B0%E6%B7%BB%E5%89%8A%E9%83%A8%E9%96%80%E3%81%AE%E9%87%8D%E8%A6%81%E6%80%A7%E3%81%A8%E3%83%9E%E3%82%A4%E3%83%B3%E3%83%89/"}}, {"id": "d2", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "4-1基本戦略", "note": "", "links": {"4-1基本戦略": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d3", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "4-2信用フェーズの突破方法", "note": "", "links": {"4-2信用フェーズの突破方法": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d4", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "4-3褒める技術", "note": "", "links": {"4-3褒める技術": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d5", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "4-4逆脈ありサイン", "note": "", "links": {"4-4逆脈ありサイン": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d6", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "5-1ノンバーバル", "note": "", "links": {"5-1ノンバーバル": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d7", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "5-2不安の解消", "note": "", "links": {"5-2不安の解消": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d8", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "5-3セットアップ", "note": "", "links": {"5-3セットアップ": "https://myfm.jp/cpBT47?mode=example"}}, {"id": "d9", "type": "習慣", "group": "オンラインコースのSeason4~5の音声学習7回行う。\n\n実際に女性を魅了して、理想の恋愛を叶える作戦が説明されています。\nデート部門中に音声学習を繰り返してインストールしましょう。\n\nSeason4~5を7周するために、音声学習を毎日1章単位でおこないましょう。\n※Season4~5を7周するためには、56日間要します。", "title": "5-4クロージングの技術", "note": "", "links": {"5-4クロージングの技術": "https://myfm.jp/cpBT47?mode=example"}}]}, {"name": "日課", "items": [{"id": "d10", "type": "単発", "title": "【超重要！！】やることリストをプリントアウトして日々確認し、実践する", "note": "やることリスト\n※必ずプリントアウトして、壁に貼りましょう！家に女性が来る際は外す", "links": {"やることリスト": "https://attraction-univ.com/%E3%80%90%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E3%80%91%E9%9F%B3%E5%A3%B0%E6%B7%BB%E5%89%8A%E9%83%A8%E9%96%80%E3%80%80%E3%82%84%E3%82%8B%E3%81%93%E3%81%A8%E3%83%AA%E3%82%B9%E3%83%88/"}}]}, {"name": "会話準備", "items": [{"id": "d11", "type": "習慣", "title": "電話マニュアルを「7回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "d12", "type": "習慣", "title": "初回デートマニュアルを「7回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "d13", "type": "習慣", "title": "2回目デートマニュアルを「7回」音声学習する", "note": "動画版\nテキスト版\n音声版\n※実際に声に出してアウトプットしましょう！", "links": {"動画版": "https://youtu.be/JH7lgD-U-gU", "テキスト版": "https://attraction-univ.com/2025/09/17/denwa-date-manual/", "音声版": "https://stand.fm/episodes/693a64721e1f20a43ae93eb3"}}, {"id": "d14", "type": "カスタム", "title": "2回目デートでの自信の無い部分のマニュアルを確認する", "note": "▼対象者：2回目デートに不安がある方\n恋愛トークマニュアル  \n身体接触マニュアル  \nグダ崩しマニュアル\n自宅マニュアル\nラブホマニュアル", "links": {"恋愛トークマニュアル": "https://attraction-univ.com/2025/09/24/renai-talk-2nd-date/", "グダ崩しマニュアル": "https://attraction-univ.com/2025/09/26/guda-kuzushi/", "自宅マニュアル": "https://attraction-univ.com/jitaku/", "ラブホマニュアル": "https://attraction-univ.com/hotel/"}}, {"id": "d15", "type": "習慣", "title": "会話準備リストを作成してサポート講師にチェック依頼をする\n（デートを重ねるたびに更新する）", "note": "会話準備リストを作成してサポート講師にチェック依頼をする\n本資料に以下のシートが用意されています。\n・基本会話リスト\n・応用会話リスト\n※実際に声に出してアウトプットしましょう！", "links": {}}]}, {"name": "準備", "items": [{"id": "d16", "type": "習慣", "title": "デート前チェックリストを確認する", "note": "デート前チェックリスト \nデート前の身だしなみを確認しましょう。", "links": {}}, {"id": "d17", "type": "単発", "title": "【重要】音声添削活用マニュアルを確認する", "note": "録音・提出マニュアルの確認", "links": {"録音・提出マニュアルの確認": "https://attraction-univ.com/2025/11/03/onnseiteisyutu/"}}]}, {"name": "行動量", "items": [{"id": "d18", "type": "単発", "title": "1回目デートで挨拶する、目を見て話す", "note": "できたものからチェックを入れましょう！\n※2回目デートでは、どんな状況でも必ずクロージング打診しましょう！", "links": {}}, {"id": "d19", "type": "単発", "title": "1回目デートで褒める、相手の話に共感する、肯定してあげる", "note": "", "links": {}}, {"id": "d20", "type": "単発", "title": "1回目デートで恋愛トークをする（恋愛トークに至るまでの話の順番は気にしない)", "note": "", "links": {}}, {"id": "d21", "type": "単発", "title": "1回目デート終了後、当日中に次回アポの打診をする\n（LINE交換をしてない場合はデート終盤にLINE交換をする）", "note": "", "links": {}}, {"id": "d22", "type": "単発", "title": "2回目デートの1軒目で特別感や逆脈ありサインで女性の自己肯定感を満たす", "note": "", "links": {}}, {"id": "d23", "type": "単発", "title": "2回目デートの1軒目でハンドテストをする", "note": "", "links": {}}, {"id": "d24", "type": "単発", "title": "2回目デートの2軒目へ移動する際に手をつなぐ", "note": "", "links": {}}, {"id": "d25", "type": "単発", "title": "2回目デートの2軒目で「肩を抱き寄せ」「頭を撫でる」など身体接触をする", "note": "", "links": {}}, {"id": "d26", "type": "単発", "title": "2回目デートの2軒目で「キス」をする", "note": "", "links": {}}, {"id": "d27", "type": "単発", "title": "手を繋いでホテルに入る", "note": "", "links": {}}, {"id": "d28", "type": "単発", "title": "初回デートに20回以上行く", "note": "デート部門の3か月目で達成を目指しましょう！", "links": {}}, {"id": "d29", "type": "単発", "title": "2回目デートに10回以上行く", "note": "", "links": {}}]}, {"name": "振り返り", "items": [{"id": "d30", "type": "習慣", "title": "デート終了後にサポート講師に連絡する", "note": "デート終了後に、サポート講師にデートの感想を簡単に送りましょう。\n※2回目デートでクロージングに至らなかった場合は、デートの詳細を共有してください！", "links": {}}, {"id": "d31", "type": "習慣", "title": "質問回答ライブに1回参加する", "note": "デートの勉強・振り返りのため、週に1回は質問回答ライブに参加しましょう！\n※LINEのメニューから参加可能です。", "links": {}}, {"id": "d32", "type": "単発", "title": "音声添削を1回提出する", "note": "早期の課題発見が「成長の鍵」です！初めてのデートは必ず提出しましょう！\n提出方法", "links": {"提出方法": "https://attraction-univ.com/2025/11/03/onseiteisyutu-rodemap/"}}, {"id": "d33", "type": "単発", "title": "音声添削を3回提出する", "note": "", "links": {}}]}, {"name": "関係構築", "items": [{"id": "d34", "type": "カスタム", "title": "関係構築マニュアルを確認して、彼女とセットアップを行う", "note": "クロージングができた女性と関係構築を目指す場合、確認して実践しましょう。\n関係構築マニュアル", "links": {"関係構築マニュアル": "https://attraction-univ.com/%E3%80%90%E9%AD%85%E5%8A%9B%E3%81%AE%E5%A4%A7%E5%AD%A6-%E5%80%8B%E5%88%A5%E6%8C%87%E5%B0%8E%E9%99%90%E5%AE%9A%E3%80%91%E9%96%A2%E4%BF%82%E6%A7%8B%E7%AF%89%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB/"}}]}, {"name": "オフ会", "items": [{"id": "d35", "type": "カスタム", "title": "オンラインコース生対象のオフ会に参加する", "note": "オンラインコース生対象のオフ会に参加しましょう\nLINEのメニューから予約可能です。", "links": {}}]}], "checklist": [{"id": "c1", "title": "デート当日の朝にシャワーを浴びたか", "sec": "身だしなみ"}, {"id": "c2", "title": "髭剃りのこし無いか", "sec": "身だしなみ"}, {"id": "c3", "title": "鼻毛、耳毛は出ていないか", "sec": "身だしなみ"}, {"id": "c4", "title": "指毛、腕毛のそり残しはないか", "sec": "身だしなみ"}, {"id": "c5", "title": "眉毛整えているか", "sec": "身だしなみ"}, {"id": "c6", "title": "爪伸びていないか", "sec": "身だしなみ"}, {"id": "c7", "title": "髪の毛はセットしているか、汗で額に張り付いていないか", "sec": "身だしなみ"}, {"id": "c8", "title": "服にシワ、ホコリ、毛玉が付いていないか", "sec": "身だしなみ"}, {"id": "c9", "title": "靴が汚れていないか", "sec": "身だしなみ"}, {"id": "c10", "title": "アクセサリーつけているか", "sec": "身だしなみ"}, {"id": "c11", "title": "肌はテカっていないか（汗拭きシート等で拭く）", "sec": "身だしなみ"}, {"id": "c12", "title": "財布の中にレシート、不要なカードは入っていないか", "sec": "身だしなみ"}, {"id": "c13", "title": "汗拭きシートで耳の裏、脇を拭いたか", "sec": "身だしなみ"}, {"id": "c14", "title": "香水はつけたか（ビジュアル部門で紹介のあるものでOK）", "sec": "身だしなみ"}, {"id": "c15", "title": "口臭対策したか（歯ブラシ、歯間ブラシ）", "sec": "身だしなみ"}, {"id": "c16", "title": "動きを0.7倍速にすることを今この瞬間から意識する", "sec": "身だしなみ"}, {"id": "c17", "title": "動作を最小限にすることを今この瞬間から意識する", "sec": "身だしなみ"}, {"id": "c18", "title": "コンドーム", "sec": "持ち物"}, {"id": "c19", "title": "リップ（乾燥する方のみ）", "sec": "持ち物"}, {"id": "c20", "title": "口臭対策系（マウスウォッシュ、ブレスケア、ミンティア等の口臭ケアタブレット）", "sec": "持ち物"}, {"id": "c21", "title": "ハンドクリーム（乾燥肌の人のみ）", "sec": "持ち物"}, {"id": "c22", "title": "汗拭きシート（ビジュアル部門で紹介のあるものでOK）", "sec": "持ち物"}]}</script>
+<script>
+(function(){
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const DIV = {
+  visual:{label:'ビジュアル部門', short:'ビジュアル', icon:'💎', c:'--v'},
+  app:   {label:'アプリ部門',     short:'アプリ',     icon:'📱', c:'--a'},
+  date:  {label:'デート部門',     short:'デート',     icon:'💗', c:'--d'}
+};
+const ICON = {
+  visual:{'面談後対応':'📅','ビジュアル全般':'✨','スキンケア':'🧴','身だしなみ':'🪒','ヘアセット':'💇','ファッション':'👔','動作・仕草':'🎥','マインド全般':'🧠'},
+  app:{'マインド':'💭','アプリ運用':'📲','導線準備':'🗺️','会話準備':'🗣️','対象者のみ':'⭐'},
+  date:{'マインド':'🎧','日課':'📋','会話準備':'🗣️','準備':'🧳','行動量':'🔥','振り返り':'📝','関係構築':'💞','オフ会':'🍻','デート前チェック':'✅'}
+};
+// デート前チェック: per-date checklist, shown as an extra tile, not counted in progress
+const CHECK_CAT = {name:'デート前チェック', check:true, items:DATA.checklist.map(x=>({id:x.id,title:x.title,sec:x.sec,type:'',note:'',links:{}}))};
+
+const state = {tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set()};
+let store = {c:{}, f:{}};
+
+// ---------- persistence: this device's browser storage ----------
+const LS='love-action-list-v1';
+try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; }catch(e){}
+let syncState='local';
+function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
+if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const cats=k=>k==='date'?[...DATA.date, CHECK_CAT]:DATA[k];
+const counted=c=>!c.check;
+function catStats(c){ const n=c.items.length, d=c.items.filter(i=>store.c[i.id]).length; return {n,d}; }
+function divStats(k){ let n=0,d=0; for(const c of cats(k)) if(counted(c)){ const s=catStats(c); n+=s.n; d+=s.d; } return {n,d,p:n?Math.round(d/n*100):0}; }
+const isImp=t=>/最重要|超重要|【重要】/.test(t);
+function visible(it){
+  if(state.undone && store.c[it.id]) return false;
+  if(state.fav && !store.f[it.id]) return false;
+  if(state.hideTarget && (it.type==='対象者のみ'||it.type==='カスタム')) return false;
+  if(state.q){ const q=state.q.toLowerCase(); if(!((it.title+' '+(it.group||'')+' '+it.note).toLowerCase().includes(q))) return false; }
+  return true;
+}
+const filtering=()=>state.undone||state.fav||state.hideTarget||!!state.q;
+function ring(p,n){
+  const r=37, C=2*Math.PI*r, off=C*(1-p);
+  return `<svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="7"/>${n?`<circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--c)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>`:''}</svg>`;
+}
+function applyColors(el,k){ const c=DIV[k].c; el.style.setProperty('--c',`var(${c})`); el.style.setProperty('--csoft',`var(${c}-soft)`); el.style.setProperty('--cbg',`var(${c}-bg)`); }
+
+// ---------- render ----------
+function renderTabs(){
+  $('#tabs').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<button class="tab" role="tab" data-k="${k}" aria-selected="${state.tab===k}"><span class="ico" aria-hidden="true">${DIV[k].icon}</span>${DIV[k].short}<span class="pct">${s.p}%</span></button>`; }).join('');
+}
+function renderHero(){
+  const k=state.tab, s=divStats(k);
+  $('#hero').innerHTML = `<div class="medal" aria-hidden="true">${DIV[k].icon}</div><div class="body"><h2>${DIV[k].label} 達成度</h2><div class="count"><b>${s.d}</b><span class="u">件</span><span class="t">/ ${s.n}</span><span class="u2">件中</span></div><div class="bar"><div class="track"><div class="fill" style="width:${s.p}%"></div></div><span>${s.p}%</span></div></div>`;
+}
+function renderGrid(){
+  const k=state.tab, list=cats(k), divS=divStats(k);
+  let firstEmptyMarked=false;
+  const tiles=list.map((c,idx)=>{
+    const vis=c.items.filter(visible);
+    if(filtering() && !vis.length) return '';
+    const {n,d}=catStats(c), p=n?d/n:0, full=n>0&&d===n;
+    let rib='';
+    if(c.check) rib='';
+    else if(!full && p>=0.7 && d>0) rib='あと少し！';
+    else if(divS.d===0 && !firstEmptyMarked){ rib='まずはここから'; firstEmptyMarked=true; }
+    const em=(ICON[k]&&ICON[k][c.name])||'📌';
+    const fr = c.check ? `<span class="fr"><b>${d}</b> / ${n}</span>` : `<span class="fr"><b>${d}</b> / ${n}</span>`;
+    return `<button class="tile" data-i="${idx}" aria-label="${esc(c.name)} ${d}/${n}">${rib?`<span class="ribbon">${rib}</span>`:''}${full&&!c.check?'<span class="done-mark" aria-hidden="true"></span>':''}<span class="ringbox">${ring(p,d)}<span class="em" aria-hidden="true">${em}</span>${full&&!c.check?'<span class="clear">CLEAR</span>':''}</span><span class="nm">${esc(c.name)}</span>${fr}</button>`;
+  }).join('');
+  $('#grid').innerHTML = tiles || `<div class="empty" style="grid-column:1/-1">条件に合うアクションはありません</div>`;
+}
+function renderSummary(){
+  let n=0,d=0; for(const k in DIV){ const s=divStats(k); n+=s.n; d+=s.d; }
+  const p=n?Math.round(d/n*100):0;
+  $('#sumtxt').innerHTML = `達成<b>${d}</b>件 / ${n}件中（${p}%）`;
+  const sync = 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
+  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + `<div class="sync">${sync}</div><div class="bk"><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
+  $('#sumhead').setAttribute('aria-expanded', state.sumOpen);
+  $('#sumdetail').hidden = !state.sumOpen;
+}
+const STAR='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
+function renderSheet(){
+  const sh=$('#sheet');
+  if(state.open==null){ sh.hidden=true; document.body.style.overflow=''; return; }
+  const k=state.tab, c=cats(k)[state.open]; if(!c){ state.open=null; return renderSheet(); }
+  applyColors(sh,k);
+  const {n,d}=catStats(c);
+  const items=c.items.filter(visible);
+  let lastGroup=null, lastSec=null, html='';
+  if(c.check) html+=`<p class="hint">デートのたびに使うチェックリストです。全体の達成度には含まれません。</p><button class="reset" id="resetChk">チェックをすべて外す</button>`;
+  for(const it of items){
+    if(c.check && it.sec!==lastSec){ html+=`<div class="group">${esc(it.sec)}</div>`; lastSec=it.sec; }
+    if(it.group && it.group!==lastGroup){ html+=`<div class="group">${esc(it.group)}</div>`; }
+    lastGroup=it.group||null;
+    const done=!!store.c[it.id], fav=!!store.f[it.id], open=state.notes.has(it.id);
+    const lk=Object.entries(it.links||{});
+    const hasMore=!!it.note || lk.length;
+    const chips=[]; if(it.type) chips.push(`<span class="chip t-${esc(it.type)}">${esc(it.type)}</span>`); if(isImp(it.title)) chips.push('<span class="chip imp">最重要</span>');
+    const linksHtml = lk.length?`<div class="lnks">${lk.map(([t,u])=>`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span>${esc(t)}</span></a>`).join('')}</div>`:'';
+    const noteText = it.note && !(lk.length===1 && it.note.trim()===lk[0][0]) ? it.note : '';
+    html+=`<div class="act${done?' is-done':''}" data-id="${it.id}">
+      <button class="tick" data-act="tick" aria-pressed="${done}" aria-label="${done?'未完了に戻す':'完了にする'}"></button>
+      <div class="main"><div class="ttl">${esc(it.title)}</div>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+      ${hasMore?`<button class="more" data-act="note" aria-expanded="${open}">${open?'▲ 閉じる':'▼ 詳しく見る'}</button>`:''}
+      ${open?`${noteText?`<div class="note">${esc(noteText)}</div>`:''}${linksHtml}`:''}</div>
+      ${c.check?'<span></span>':`<button class="fav" data-act="fav" aria-pressed="${fav}" aria-label="お気に入り">${STAR}</button>`}
+    </div>`;
+  }
+  if(!items.length) html+='<div class="empty">条件に合うアクションはありません</div>';
+  const wasOpen=!sh.hidden; const sc=wasOpen?sh.querySelector('.sheet-b')?.scrollTop:0;
+  sh.innerHTML=`<div class="sheet-h"><div class="wrap"><button class="back" id="back" aria-label="戻る"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="t"><small>${DIV[k].label}</small><strong>${esc(c.name)}</strong></div><span class="fr">${d} / ${n}</span></div></div><div class="sheet-b"><div class="wrap">${html}</div></div>`;
+  sh.hidden=false; document.body.style.overflow='hidden';
+  if(wasOpen) sh.querySelector('.sheet-b').scrollTop=sc||0;
+}
+function render(){
+  applyColors(document.documentElement,state.tab);
+  renderTabs(); renderHero(); renderGrid(); renderSummary(); renderSheet();
+}
+
+// ---------- events ----------
+$('#tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; state.tab=b.dataset.k; try{localStorage.setItem(LS+':tab',state.tab);}catch(_){} render(); });
+$('#grid').addEventListener('click',e=>{ const t=e.target.closest('.tile'); if(!t) return; state.open=+t.dataset.i; state.notes.clear(); renderSheet(); });
+$('#sumhead').addEventListener('click',()=>{ state.sumOpen=!state.sumOpen; renderSummary(); });
+$('#q').addEventListener('input',e=>{ state.q=e.target.value.trim(); renderGrid(); });
+$('#fUndone').addEventListener('change',e=>{ state.undone=e.target.checked; renderGrid(); });
+$('#fFav').addEventListener('change',e=>{ state.fav=e.target.checked; renderGrid(); });
+$('#fHideTarget').addEventListener('change',e=>{ state.hideTarget=e.target.checked; renderGrid(); });
+$('#sheet').addEventListener('click',e=>{
+  if(e.target.closest('#back')){ state.open=null; render(); return; }
+  if(e.target.closest('#resetChk')){ for(const it of CHECK_CAT.items) delete store.c[it.id]; persist(); render(); return; }
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const id=b.closest('.act').dataset.id;
+  if(b.dataset.act==='tick'){ if(store.c[id]) delete store.c[id]; else store.c[id]=1; persist(); render(); }
+  else if(b.dataset.act==='fav'){ if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); renderSheet(); }
+  else if(b.dataset.act==='note'){ state.notes.has(id)?state.notes.delete(id):state.notes.add(id); renderSheet(); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open!=null){ state.open=null; render(); } });
+
+// ---------- backup ----------
+document.addEventListener('click',async e=>{
+  const msg=t=>{ const m=document.getElementById('bkmsg'); if(m) m.textContent=t; };
+  if(e.target.closest('#bkCopy')){
+    const code=JSON.stringify({app:'love-action-list',v:1,c:store.c,f:store.f});
+    try{ await navigator.clipboard.writeText(code); msg('コピーしました。メモ帳やLINEのKeepに貼って保存してください。'); }
+    catch(_){ $('#restoreText').value=code; $('#restore').hidden=false; $('#restoreText').select(); msg(''); }
+  }
+  if(e.target.closest('#bkRestore')){ $('#restoreText').value=''; $('#restore').hidden=false; $('#restoreText').focus(); }
+  if(e.target.closest('#restoreCancel')){ $('#restore').hidden=true; }
+  if(e.target.closest('#restoreOk')){
+    try{ const d=JSON.parse($('#restoreText').value.trim()); if(!d||typeof d.c!=='object') throw 0;
+      store={c:d.c||{},f:d.f||{}}; persist(); $('#restore').hidden=true; render(); msg('復元しました。'); }
+    catch(_){ alert('読み取れませんでした。コピーした文字を全部貼り付けているか確認してください。'); }
+  }
+});
+
+// ---------- install to home screen ----------
+(function(){
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let dismissed=false; try{ dismissed=localStorage.getItem(LS+':installHidden')==='1'; }catch(_){}
+  if(standalone||dismissed) return;
+  const bar=$('#install'), txt=$('#installText'), btn=$('#installBtn');
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(ios){ txt.textContent='Safariの共有ボタン（□↑）→「ホーム画面に追加」で、アプリとして使えます'; bar.hidden=false; }
+  addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; txt.textContent='ホーム画面に追加すると、アプリとして使えます'; btn.hidden=false; bar.hidden=false; });
+  btn.addEventListener('click',async()=>{ if(!deferred) return; deferred.prompt(); await deferred.userChoice.catch(()=>{}); deferred=null; bar.hidden=true; });
+  $('#installClose').addEventListener('click',()=>{ bar.hidden=true; try{localStorage.setItem(LS+':installHidden','1');}catch(_){} });
+})();
+if('serviceWorker' in navigator && window.isSecureContext){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+render();
+})();
+</script>
+</body>
+</html>

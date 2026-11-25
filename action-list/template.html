@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#22262d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="アクション">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>恋愛アクションリスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: app shell — header, filters, color-coded division tabs, progress card, 3-col tile grid, sticky summary bar; tiles open a full-screen action sheet */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --ink:#2f3542; --muted:#7a808c; --line:#e3e6e2; --ring-track:#e6e8e4;
+  --navy:#344055; --gold:#e3a008; --star:#f2b01e;
+  --v:#2fa776; --v-soft:#dcefe6; --v-bg:#eef7f2;
+  --a:#de8f0b; --a-soft:#f7e6c4; --a-bg:#fcf5e8;
+  --d:#d9608f; --d-soft:#f7dbe6; --d-bg:#fdf1f5;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171a1f; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#343943; --ring-track:#3a3f49;
+  --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
+  --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
+  --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171a1f; --surface:#22262d; --ink:#e9ebef; --muted:#a2a8b3; --line:#343943; --ring-track:#3a3f49;
+  --navy:#2a3446; --gold:#f2b632; --star:#f5c04a;
+  --v:#4cc792; --v-soft:#24443a; --v-bg:#1b2723;
+  --a:#f0a53a; --a-soft:#4a3a1f; --a-bg:#272219;
+  --d:#ee7fab; --d-soft:#4a2a39; --d-bg:#281d22; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--c,var(--v));outline-offset:2px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:center;min-height:56px;position:relative}
+header.top h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.04em;color:var(--ink)}
+.tools{display:grid;gap:10px;padding-block:14px 6px}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:0 12px}
+.search input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:var(--ink);padding:11px 0;outline:none}
+.search svg{flex:none;color:var(--muted)}
+.flabel{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em}
+.filters{display:flex;flex-wrap:wrap;gap:6px 18px}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:15px;user-select:none;cursor:pointer}
+.chk input{appearance:none;width:22px;height:22px;border:2px solid var(--muted);border-radius:6px;margin:0;display:grid;place-items:center;background:var(--surface);cursor:pointer}
+.chk input:checked{background:var(--navy);border-color:var(--navy)}
+.chk input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:14px;border-bottom:3px solid var(--c);}
+.tab{--tc:var(--v);border:2px solid color-mix(in srgb,var(--tc) 45%,transparent);border-bottom:0;border-radius:12px 12px 0 0;background:var(--surface);padding:8px 4px 6px;display:grid;justify-items:center;gap:2px;color:var(--tc);font-weight:800;font-size:16px;position:relative;transition:transform .15s}
+.tab .ico{font-size:22px;line-height:1}
+.tab .pct{font-size:11px;font-weight:700;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 9%,var(--surface));border-width:3px;border-bottom:0;margin-bottom:-3px;padding-bottom:9px}
+.tab[data-k="visual"]{--tc:var(--v)}.tab[data-k="app"]{--tc:var(--a)}.tab[data-k="date"]{--tc:var(--d)}
+main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:background .2s}
+.hero{display:flex;align-items:center;gap:18px;background:var(--csoft);border-radius:14px;padding:18px;margin-top:18px}
+.hero .medal{flex:none;width:96px;height:96px;border-radius:50%;background:color-mix(in srgb,var(--c) 22%,var(--surface));display:grid;place-items:center;font-size:46px}
+.hero .body{flex:1;min-width:0}
+.hero h2{margin:0 0 8px;font-size:17px;color:var(--c);font-weight:800}
+.count{display:inline-flex;align-items:baseline;gap:4px;background:var(--surface);border-radius:8px;padding:6px 14px;font-variant-numeric:tabular-nums}
+.count b{font-size:40px;line-height:1.1;color:var(--c);font-weight:800}
+.count .u{font-size:13px;color:var(--c)}
+.count .t{font-size:30px;font-weight:500;margin-left:4px}
+.count .u2{font-size:13px}
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px}
+.bar .track{flex:1;height:10px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,var(--surface));overflow:hidden}
+.bar .fill{height:100%;border-radius:99px;background:var(--c);transition:width .4s ease}
+.bar span{font-size:14px;font-variant-numeric:tabular-nums;min-width:3em;text-align:right}
+
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px}
+.tile{position:relative;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:16px 6px 12px;display:grid;justify-items:center;gap:6px;text-align:center;transition:transform .12s, box-shadow .12s}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 16px -10px rgba(0,0,0,.35)}
+.tile:active{transform:scale(.98)}
+.ringbox{position:relative;width:84px;height:84px}
+.ringbox svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ringbox .em{position:absolute;inset:10px;border-radius:50%;background:color-mix(in srgb,var(--c) 8%,var(--surface));display:grid;place-items:center;font-size:32px}
+.tile .nm{font-weight:800;font-size:15px;line-height:1.3;min-height:2.6em;display:grid;place-items:center;padding:0 2px}
+.tile .fr{font-size:17px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tile .fr b{color:var(--c);font-weight:800}
+.ribbon{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:2px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.04em}
+.clear{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);background:var(--c);color:#fff;font-size:12px;font-weight:800;padding:0 9px;border-radius:99px;letter-spacing:.05em;border:2px solid var(--surface)}
+.done-mark{position:absolute;top:-10px;right:-8px;width:28px;height:28px;border-radius:50%;background:var(--c);display:grid;place-items:center;border:2px solid var(--surface)}
+.done-mark::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.empty{padding:40px 0;text-align:center;color:var(--muted)}
+
+.sumbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:3px solid var(--c);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -6px 20px -14px rgba(0,0,0,.4)}
+.sumbar .wrap{padding-block:10px}
+.sumhead{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:0;text-align:left}
+.sumhead .coin{font-size:34px;flex:none}
+.sumhead .tx{flex:1;min-width:0}
+.sumhead .l1{font-weight:700;font-size:15px}
+.sumhead .l2{font-size:13px}
+.sumhead .l2 b{font-size:26px;color:var(--gold);font-weight:800;margin:0 4px;font-variant-numeric:tabular-nums}
+.chev{flex:none;transition:transform .2s;color:var(--navy)}
+:root[data-theme="dark"] .chev{color:var(--muted)}
+.sumhead[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.sumdetail{display:grid;gap:8px;padding-top:10px}
+.sumrow{display:grid;grid-template-columns:7.5em 1fr 4.5em;align-items:center;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
+.sumrow .track{height:8px;border-radius:99px;background:var(--ring-track);overflow:hidden}
+.sumrow .fill{height:100%;border-radius:99px}
+.sumrow span:last-child{text-align:right}
+.sync{font-size:11px;color:var(--muted)}
+
+/* sheet */
+.sheet[hidden]{display:none!important}
+.sheet{position:fixed;inset:0;z-index:40;background:var(--cbg);display:flex;flex-direction:column;animation:up .22s ease}
+@keyframes up{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.tile,.tab,.bar .fill{transition:none}}
+.sheet-h{background:var(--surface);border-bottom:3px solid var(--c);padding-top:env(safe-area-inset-top,0px)}
+.sheet-h .wrap{display:flex;align-items:center;gap:10px;min-height:60px}
+.back{border:0;background:none;padding:8px;margin-left:-8px;display:grid;place-items:center;color:var(--c)}
+.sheet-h .t{flex:1;min-width:0}
+.sheet-h .t small{display:block;font-size:12px;color:var(--c);font-weight:700}
+.sheet-h .t strong{font-size:18px}
+.sheet-h .fr{font-variant-numeric:tabular-nums;font-weight:800;color:var(--c);font-size:18px}
+.sheet-b{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheet-b .wrap{padding-block:14px calc(40px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+.group{font-size:13px;font-weight:700;color:var(--muted);padding:10px 2px 0;white-space:pre-line;line-height:1.5}
+.act{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;padding:12px;align-items:start}
+.act.is-done{border-color:color-mix(in srgb,var(--c) 45%,var(--line));background:color-mix(in srgb,var(--c) 6%,var(--surface))}
+.tick{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--c);background:var(--surface);display:grid;place-items:center;padding:0;margin-top:1px}
+.act.is-done .tick{background:var(--c)}
+.act.is-done .tick::after{content:"";width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-2px) rotate(45deg)}
+.act .main{min-width:0}
+.act .ttl{font-weight:700;white-space:pre-line;line-height:1.45;word-break:break-word}
+.act.is-done .ttl{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--c) 70%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;border:1.5px solid currentColor;line-height:1.6}
+.chip.t-単発{color:var(--c)}
+.chip.t-習慣{color:var(--a)}
+.chip.t-対象者のみ,.chip.t-カスタム{color:var(--muted)}
+.chip.imp{color:#fff;background:#e0533d;border-color:#e0533d}
+.more{border:0;background:none;padding:0;font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;display:inline-flex;align-items:center;gap:4px}
+.note{white-space:pre-line;font-size:13.5px;color:var(--ink);background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px;word-break:break-word;line-height:1.65}
+.lnks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lnk{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--surface));border-radius:8px;padding:5px 10px;text-decoration:none;max-width:100%}
+.lnk span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav{border:0;background:none;padding:4px;color:var(--line);display:grid;place-items:center}
+.fav[aria-pressed="true"]{color:var(--star)}
+.fav svg{width:24px;height:24px}
+.reset{justify-self:end;border:1.5px solid var(--c);color:var(--c);background:var(--surface);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+@media (max-width:420px){
+  .grid{gap:9px}.ringbox{width:72px;height:72px}.ringbox .em{font-size:27px}.tile .nm{font-size:13.5px}
+  .hero{gap:12px;padding:14px}.hero .medal{width:72px;height:72px;font-size:34px}.count b{font-size:34px}.count .t{font-size:24px}
+  .tab{font-size:14px}
+}
+
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;overscroll-behavior-y:none}
+.bk{display:flex;flex-wrap:wrap;gap:8px}
+.bkmsg{font-size:12px;color:var(--c);min-height:1em}
+.install{background:var(--navy);color:#fff;font-size:13.5px}
+.install .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.install p{margin:0;flex:1;min-width:0;line-height:1.5}
+.install button{border:0;border-radius:99px;padding:6px 14px;font-weight:700;background:#fff;color:#344055;flex:none}
+.install .x{background:transparent;color:#fff;padding:6px;font-size:18px;line-height:1}
+.restore{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}
+.restore .box{background:var(--surface);border-radius:14px;padding:16px;width:min(100%,460px);display:grid;gap:10px}
+.restore textarea{width:100%;min-height:120px;font:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink)}
+.restore .row{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap"><h1>恋愛アクションリスト</h1></div></header>
+<div class="install" id="install" hidden><div class="wrap"><p id="installText"></p><button id="installBtn" hidden>追加する</button><button class="x" id="installClose" aria-label="閉じる">×</button></div></div>
+<div class="restore" id="restore" hidden><div class="box"><strong>バックアップから復元</strong><p class="hint">「バックアップをコピー」で控えた文字をそのまま貼り付けてください。今のチェックは上書きされます。</p><textarea id="restoreText" aria-label="バックアップ"></textarea><div class="row"><button class="reset" id="restoreCancel">やめる</button><button class="reset" id="restoreOk">復元する</button></div></div></div>
+
+
+<main id="main">
+  <div class="wrap">
+    <div class="tools">
+      <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="アクションを検索" autocomplete="off"></label>
+      <div class="flabel">表示を絞り込む</div>
+      <div class="filters">
+        <label class="chk"><input type="checkbox" id="fUndone">未完了</label>
+        <label class="chk"><input type="checkbox" id="fFav">お気に入り</label>
+        <label class="chk"><input type="checkbox" id="fHideTarget">対象者のみを隠す</label>
+      </div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section class="hero" id="hero"></section>
+    <div id="results"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</main>
+
+<div class="sumbar" id="sumbar">
+  <div class="wrap">
+    <button class="sumhead" id="sumhead" aria-expanded="false" aria-controls="sumdetail">
+      <span class="coin" aria-hidden="true">🏅</span>
+      <span class="tx"><span class="l1">あなたの魅力アップ 全体の達成度</span><br><span class="l2" id="sumtxt"></span></span>
+      <svg class="chev" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="sumdetail" id="sumdetail" hidden></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const DIV = {
+  visual:{label:'ビジュアル部門', short:'ビジュアル', icon:'💎', c:'--v'},
+  app:   {label:'アプリ部門',     short:'アプリ',     icon:'📱', c:'--a'},
+  date:  {label:'デート部門',     short:'デート',     icon:'💗', c:'--d'}
+};
+const ICON = {
+  visual:{'面談後対応':'📅','ビジュアル全般':'✨','スキンケア':'🧴','身だしなみ':'🪒','ヘアセット':'💇','ファッション':'👔','動作・仕草':'🎥','マインド全般':'🧠'},
+  app:{'マインド':'💭','アプリ運用':'📲','導線準備':'🗺️','会話準備':'🗣️','対象者のみ':'⭐'},
+  date:{'マインド':'🎧','日課':'📋','会話準備':'🗣️','準備':'🧳','行動量':'🔥','振り返り':'📝','関係構築':'💞','オフ会':'🍻','デート前チェック':'✅'}
+};
+// デート前チェック: per-date checklist, shown as an extra tile, not counted in progress
+const CHECK_CAT = {name:'デート前チェック', check:true, items:DATA.checklist.map(x=>({id:x.id,title:x.title,sec:x.sec,type:'',note:'',links:{}}))};
+
+const state = {tab:'visual', q:'', undone:false, fav:false, hideTarget:false, open:null, sumOpen:false, notes:new Set()};
+let store = {c:{}, f:{}};
+
+// ---------- persistence: this device's browser storage ----------
+const LS='love-action-list-v1';
+try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; }catch(e){}
+let syncState='local';
+function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
+if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const cats=k=>k==='date'?[...DATA.date, CHECK_CAT]:DATA[k];
+const counted=c=>!c.check;
+function catStats(c){ const n=c.items.length, d=c.items.filter(i=>store.c[i.id]).length; return {n,d}; }
+function divStats(k){ let n=0,d=0; for(const c of cats(k)) if(counted(c)){ const s=catStats(c); n+=s.n; d+=s.d; } return {n,d,p:n?Math.round(d/n*100):0}; }
+const isImp=t=>/最重要|超重要|【重要】/.test(t);
+function visible(it){
+  if(state.undone && store.c[it.id]) return false;
+  if(state.fav && !store.f[it.id]) return false;
+  if(state.hideTarget && (it.type==='対象者のみ'||it.type==='カスタム')) return false;
+  if(state.q){ const q=state.q.toLowerCase(); if(!((it.title+' '+(it.group||'')+' '+it.note).toLowerCase().includes(q))) return false; }
+  return true;
+}
+const filtering=()=>state.undone||state.fav||state.hideTarget||!!state.q;
+function ring(p,n){
+  const r=37, C=2*Math.PI*r, off=C*(1-p);
+  return `<svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="7"/>${n?`<circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--c)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>`:''}</svg>`;
+}
+function applyColors(el,k){ const c=DIV[k].c; el.style.setProperty('--c',`var(${c})`); el.style.setProperty('--csoft',`var(${c}-soft)`); el.style.setProperty('--cbg',`var(${c}-bg)`); }
+
+// ---------- render ----------
+function renderTabs(){
+  $('#tabs').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<button class="tab" role="tab" data-k="${k}" aria-selected="${state.tab===k}"><span class="ico" aria-hidden="true">${DIV[k].icon}</span>${DIV[k].short}<span class="pct">${s.p}%</span></button>`; }).join('');
+}
+function renderHero(){
+  const k=state.tab, s=divStats(k);
+  $('#hero').innerHTML = `<div class="medal" aria-hidden="true">${DIV[k].icon}</div><div class="body"><h2>${DIV[k].label} 達成度</h2><div class="count"><b>${s.d}</b><span class="u">件</span><span class="t">/ ${s.n}</span><span class="u2">件中</span></div><div class="bar"><div class="track"><div class="fill" style="width:${s.p}%"></div></div><span>${s.p}%</span></div></div>`;
+}
+function renderGrid(){
+  const k=state.tab, list=cats(k), divS=divStats(k);
+  let firstEmptyMarked=false;
+  const tiles=list.map((c,idx)=>{
+    const vis=c.items.filter(visible);
+    if(filtering() && !vis.length) return '';
+    const {n,d}=catStats(c), p=n?d/n:0, full=n>0&&d===n;
+    let rib='';
+    if(c.check) rib='';
+    else if(!full && p>=0.7 && d>0) rib='あと少し！';
+    else if(divS.d===0 && !firstEmptyMarked){ rib='まずはここから'; firstEmptyMarked=true; }
+    const em=(ICON[k]&&ICON[k][c.name])||'📌';
+    const fr = c.check ? `<span class="fr"><b>${d}</b> / ${n}</span>` : `<span class="fr"><b>${d}</b> / ${n}</span>`;
+    return `<button class="tile" data-i="${idx}" aria-label="${esc(c.name)} ${d}/${n}">${rib?`<span class="ribbon">${rib}</span>`:''}${full&&!c.check?'<span class="done-mark" aria-hidden="true"></span>':''}<span class="ringbox">${ring(p,d)}<span class="em" aria-hidden="true">${em}</span>${full&&!c.check?'<span class="clear">CLEAR</span>':''}</span><span class="nm">${esc(c.name)}</span>${fr}</button>`;
+  }).join('');
+  $('#grid').innerHTML = tiles || `<div class="empty" style="grid-column:1/-1">条件に合うアクションはありません</div>`;
+}
+function renderSummary(){
+  let n=0,d=0; for(const k in DIV){ const s=divStats(k); n+=s.n; d+=s.d; }
+  const p=n?Math.round(d/n*100):0;
+  $('#sumtxt').innerHTML = `達成<b>${d}</b>件 / ${n}件中（${p}%）`;
+  const sync = 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
+  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + `<div class="sync">${sync}</div><div class="bk"><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
+  $('#sumhead').setAttribute('aria-expanded', state.sumOpen);
+  $('#sumdetail').hidden = !state.sumOpen;
+}
+const STAR='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
+function renderSheet(){
+  const sh=$('#sheet');
+  if(state.open==null){ sh.hidden=true; document.body.style.overflow=''; return; }
+  const k=state.tab, c=cats(k)[state.open]; if(!c){ state.open=null; return renderSheet(); }
+  applyColors(sh,k);
+  const {n,d}=catStats(c);
+  const items=c.items.filter(visible);
+  let lastGroup=null, lastSec=null, html='';
+  if(c.check) html+=`<p class="hint">デートのたびに使うチェックリストです。全体の達成度には含まれません。</p><button class="reset" id="resetChk">チェックをすべて外す</button>`;
+  for(const it of items){
+    if(c.check && it.sec!==lastSec){ html+=`<div class="group">${esc(it.sec)}</div>`; lastSec=it.sec; }
+    if(it.group && it.group!==lastGroup){ html+=`<div class="group">${esc(it.group)}</div>`; }
+    lastGroup=it.group||null;
+    const done=!!store.c[it.id], fav=!!store.f[it.id], open=state.notes.has(it.id);
+    const lk=Object.entries(it.links||{});
+    const hasMore=!!it.note || lk.length;
+    const chips=[]; if(it.type) chips.push(`<span class="chip t-${esc(it.type)}">${esc(it.type)}</span>`); if(isImp(it.title)) chips.push('<span class="chip imp">最重要</span>');
+    const linksHtml = lk.length?`<div class="lnks">${lk.map(([t,u])=>`<a class="lnk" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span>${esc(t)}</span></a>`).join('')}</div>`:'';
+    const noteText = it.note && !(lk.length===1 && it.note.trim()===lk[0][0]) ? it.note : '';
+    html+=`<div class="act${done?' is-done':''}" data-id="${it.id}">
+      <button class="tick" data-act="tick" aria-pressed="${done}" aria-label="${done?'未完了に戻す':'完了にする'}"></button>
+      <div class="main"><div class="ttl">${esc(it.title)}</div>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+      ${hasMore?`<button class="more" data-act="note" aria-expanded="${open}">${open?'▲ 閉じる':'▼ 詳しく見る'}</button>`:''}
+      ${open?`${noteText?`<div class="note">${esc(noteText)}</div>`:''}${linksHtml}`:''}</div>
+      ${c.check?'<span></span>':`<button class="fav" data-act="fav" aria-pressed="${fav}" aria-label="お気に入り">${STAR}</button>`}
+    </div>`;
+  }
+  if(!items.length) html+='<div class="empty">条件に合うアクションはありません</div>';
+  const wasOpen=!sh.hidden; const sc=wasOpen?sh.querySelector('.sheet-b')?.scrollTop:0;
+  sh.innerHTML=`<div class="sheet-h"><div class="wrap"><button class="back" id="back" aria-label="戻る"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="t"><small>${DIV[k].label}</small><strong>${esc(c.name)}</strong></div><span class="fr">${d} / ${n}</span></div></div><div class="sheet-b"><div class="wrap">${html}</div></div>`;
+  sh.hidden=false; document.body.style.overflow='hidden';
+  if(wasOpen) sh.querySelector('.sheet-b').scrollTop=sc||0;
+}
+function render(){
+  applyColors(document.documentElement,state.tab);
+  renderTabs(); renderHero(); renderGrid(); renderSummary(); renderSheet();
+}
+
+// ---------- events ----------
+$('#tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; state.tab=b.dataset.k; try{localStorage.setItem(LS+':tab',state.tab);}catch(_){} render(); });
+$('#grid').addEventListener('click',e=>{ const t=e.target.closest('.tile'); if(!t) return; state.open=+t.dataset.i; state.notes.clear(); renderSheet(); });
+$('#sumhead').addEventListener('click',()=>{ state.sumOpen=!state.sumOpen; renderSummary(); });
+$('#q').addEventListener('input',e=>{ state.q=e.target.value.trim(); renderGrid(); });
+$('#fUndone').addEventListener('change',e=>{ state.undone=e.target.checked; renderGrid(); });
+$('#fFav').addEventListener('change',e=>{ state.fav=e.target.checked; renderGrid(); });
+$('#fHideTarget').addEventListener('change',e=>{ state.hideTarget=e.target.checked; renderGrid(); });
+$('#sheet').addEventListener('click',e=>{
+  if(e.target.closest('#back')){ state.open=null; render(); return; }
+  if(e.target.closest('#resetChk')){ for(const it of CHECK_CAT.items) delete store.c[it.id]; persist(); render(); return; }
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const id=b.closest('.act').dataset.id;
+  if(b.dataset.act==='tick'){ if(store.c[id]) delete store.c[id]; else store.c[id]=1; persist(); render(); }
+  else if(b.dataset.act==='fav'){ if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); renderSheet(); }
+  else if(b.dataset.act==='note'){ state.notes.has(id)?state.notes.delete(id):state.notes.add(id); renderSheet(); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open!=null){ state.open=null; render(); } });
+
+// ---------- backup ----------
+document.addEventListener('click',async e=>{
+  const msg=t=>{ const m=document.getElementById('bkmsg'); if(m) m.textContent=t; };
+  if(e.target.closest('#bkCopy')){
+    const code=JSON.stringify({app:'love-action-list',v:1,c:store.c,f:store.f});
+    try{ await navigator.clipboard.writeText(code); msg('コピーしました。メモ帳やLINEのKeepに貼って保存してください。'); }
+    catch(_){ $('#restoreText').value=code; $('#restore').hidden=false; $('#restoreText').select(); msg(''); }
+  }
+  if(e.target.closest('#bkRestore')){ $('#restoreText').value=''; $('#restore').hidden=false; $('#restoreText').focus(); }
+  if(e.target.closest('#restoreCancel')){ $('#restore').hidden=true; }
+  if(e.target.closest('#restoreOk')){
+    try{ const d=JSON.parse($('#restoreText').value.trim()); if(!d||typeof d.c!=='object') throw 0;
+      store={c:d.c||{},f:d.f||{}}; persist(); $('#restore').hidden=true; render(); msg('復元しました。'); }
+    catch(_){ alert('読み取れませんでした。コピーした文字を全部貼り付けているか確認してください。'); }
+  }
+});
+
+// ---------- install to home screen ----------
+(function(){
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let dismissed=false; try{ dismissed=localStorage.getItem(LS+':installHidden')==='1'; }catch(_){}
+  if(standalone||dismissed) return;
+  const bar=$('#install'), txt=$('#installText'), btn=$('#installBtn');
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(ios){ txt.textContent='Safariの共有ボタン（□↑）→「ホーム画面に追加」で、アプリとして使えます'; bar.hidden=false; }
+  addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; txt.textContent='ホーム画面に追加すると、アプリとして使えます'; btn.hidden=false; bar.hidden=false; });
+  btn.addEventListener('click',async()=>{ if(!deferred) return; deferred.prompt(); await deferred.userChoice.catch(()=>{}); deferred=null; bar.hidden=true; });
+  $('#installClose').addEventListener('click',()=>{ bar.hidden=true; try{localStorage.setItem(LS+':installHidden','1');}catch(_){} });
+})();
+if('serviceWorker' in navigator && window.isSecureContext){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+render();
+})();
+</script>
+</body>
+</html>
