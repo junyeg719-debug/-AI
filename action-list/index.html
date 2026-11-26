@@ -161,6 +161,10 @@ main{background:var(--cbg);min-height:60vh;padding-bottom:120px;transition:backg
 .share .warn{color:#d0473a}
 .shrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .shrow input{flex:1;min-width:8em;font:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink)}
+#viewReload{white-space:nowrap;flex:none}
+.share.viewing{border-color:var(--navy);background:color-mix(in srgb,var(--navy) 6%,var(--surface))}
+.toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--navy);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:70;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
 .shtop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .share.on{display:grid}
 .linkbox{display:flex;gap:6px}
@@ -307,13 +311,17 @@ let store = {c:{}, f:{}};
 const LS='love-action-list-v1';
 try{ const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.c) store={c:s.c||{},f:s.f||{}}; const t=localStorage.getItem(LS+':tab'); if(t&&DIV[t]) state.tab=t; const m=localStorage.getItem(LS+':mode'); if(m==='talk') state.mode='talk'; const tk=localStorage.getItem(LS+':talk'); if(tk) state.talkKey=tk; }catch(e){}
 let syncState='local';
+// 講師がスプレッドシートの「進捗を見る」から開いたとき（?c=コード&v=1）：閲覧専用。この端末の記録には触れない
+const VIEW=(()=>{ try{ const u=new URL(location.href); const c=(u.searchParams.get('c')||'').toUpperCase().replace(/[^A-Z0-9]/g,''); return u.searchParams.get('v')==='1'&&c?{code:c,name:'',loaded:false,at:null,error:''}:null; }catch(e){ return null; } })();
+if(VIEW){ store={c:{},f:{}}; }
 // 初回公開版（行番号のID）で付けたチェックを、新しいIDに引き継ぐ
 (function migrate(){
+  if(VIEW) return;
   const L=DATA.legacy||{}; let moved=false;
   for(const bag of [store.c, store.f]) for(const k of Object.keys(bag)) if(L[k]){ bag[L[k]]=bag[k]; delete bag[k]; moved=true; }
   if(moved) try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
 })();
-function persist(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} queueSync(); }
+function persist(){ if(VIEW) return; try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} queueSync(); }
 
 // ---------- 講師と進捗を共有（Googleスプレッドシート） ----------
 const API_URL='https://script.google.com/macros/s/AKfycbxF13pcVi3sdE4k9zuSwYZdvqBld5L4X9Y3YudopimACNXdl-IIvw6LvdOgG5SEkOhQ/exec';
@@ -360,6 +368,8 @@ async function registerCode(code,msgEl){
   say('確認中…');
   try{
     const j=await api({action:'register',code});
+    // 別の受講生の共有から切り替えるときは混ぜずに入れ替える。初めて共有する端末では手元のチェックも合わせる
+    if(share&&share.code!==code){ const keep={}; for(const k of Object.keys(store.c)) if(k.startsWith('c')) keep[k]=1; store.c=keep; }
     for(const id of (j.checked||[])) store.c[id]=1;
     try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){}
     share={code,name:j.name||'',since:Date.now()}; saveShare(); shareError='';
@@ -409,7 +419,7 @@ function keepCodeInUrl(){
   const m=document.querySelector('link[rel="manifest"]'); if(ios&&share&&m) m.remove();
 }
 function shareHtml(compact){
-  if(!API_URL) return '';
+  if(!API_URL||VIEW) return '';
   const id=compact?'2':'1';
   if(share){
     const t=share.lastSent?new Date(share.lastSent).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだ';
@@ -431,12 +441,29 @@ function shareHtml(compact){
       <p class="sm">リンクを受け取った場合は、そのリンクを開くだけで大丈夫です。</p></details>
     ${compact?'':'<button class="later" id="shareLater">あとで</button>'}</div>`;
 }
+async function viewLoad(){
+  if(!VIEW) return;
+  VIEW.error=''; renderShareBox();
+  try{
+    const j=await api({action:'register',code:VIEW.code});
+    store.c={}; for(const id of (j.checked||[])) store.c[id]=1;
+    VIEW.name=j.name||''; VIEW.loaded=true; VIEW.at=Date.now();
+  }catch(e){ VIEW.error=e.message||'読み込めませんでした'; }
+  render();
+}
+function viewBanner(){
+  const t=VIEW.at?new Date(VIEW.at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="share viewing"><div class="shtop"><div><strong>👀 ${VIEW.name?esc(VIEW.name)+'さんの':''}進捗（閲覧専用）</strong><br><span class="sm">${VIEW.error?`<span class="warn">${esc(VIEW.error)}</span>`:VIEW.loaded?`${t} 時点の内容です。チェックは受講生のアプリで付けます。`:'読み込み中…'}</span></div><button class="reset" id="viewReload">最新にする</button></div></div>`;
+}
 function renderShareBox(){
   const box=document.getElementById('sharebox'); if(!box) return;
+  if(VIEW){ box.hidden=state.mode!=='action'; box.innerHTML=viewBanner(); return; }
   const show=API_URL && !share && !shareDismissed && state.mode==='action';
   box.hidden=!show; box.innerHTML=show?shareHtml(false):'';
 }
+function flash(msg){ let el=document.getElementById('toast'); if(!el){ el=document.createElement('div'); el.id='toast'; el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el); } el.textContent=msg; el.classList.add('on'); clearTimeout(flash.t); flash.t=setTimeout(()=>el.classList.remove('on'),2200); }
 document.addEventListener('click',e=>{
+  if(e.target.closest('#viewReload')){ viewLoad(); return; }
   const r=e.target.closest('[data-reg]'); if(r){ const id=r.dataset.reg; registerCode(document.getElementById(id).value, document.querySelector(`[data-msg="${id}"]`)); return; }
   const cr=e.target.closest('[data-create]'); if(cr){ const id=cr.dataset.create; createLink(document.getElementById(id).value, document.querySelector(`[data-msg="${id}"]`)); return; }
   const cp=e.target.closest('[data-copy]'); if(cp){ const el=document.getElementById(cp.dataset.copy); const msg=document.querySelector(`[data-copied="${cp.dataset.copy}"]`);
@@ -448,9 +475,10 @@ document.addEventListener('keydown',e=>{ if(e.key!=='Enter'||e.isComposing||!e.t
   if(e.target.matches('[id^="codeIn"]')){ e.preventDefault(); document.querySelector(`[data-reg="${e.target.id}"]`).click(); }
   if(e.target.matches('[id^="nameIn"]')){ e.preventDefault(); document.querySelector(`[data-create="${e.target.id}"]`).click(); } });
 addEventListener('online',()=>syncNow());
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') syncNow(true); else pull(); });
+document.addEventListener('visibilitychange',()=>{ if(VIEW){ if(document.visibilityState==='visible') viewLoad(); return; } if(document.visibilityState==='hidden') syncNow(true); else pull(); });
 // 起動時：リンクにコードが付いていればそれを使い、共有中なら相手の変更を取り込む
 setTimeout(()=>{
+  if(VIEW){ if(API_URL) viewLoad(); else { VIEW.error='共有の準備ができていません'; renderShareBox(); } return; }
   let c=''; try{ c=(new URL(location.href).searchParams.get('c')||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }catch(e){}
   if(API_URL && c && (!share||share.code!==c)) registerCode(c);
   else if(share){ keepCodeInUrl(); pull(); }
@@ -527,8 +555,8 @@ function renderSummary(){
   let n=0,d=0; for(const k in DIV){ const s=divStats(k); n+=s.n; d+=s.d; }
   const p=n?Math.round(d/n*100):0;
   $('#sumtxt').innerHTML = `達成<b>${d}</b>件 / ${n}件中（${p}%）`;
-  const sync = share ? 'チェックはこの端末と講師のスプレッドシートに保存されています。' : 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
-  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + shareHtml(true) + `<div class="sync">${sync}</div><div class="bk"><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
+  const sync = VIEW ? '閲覧専用で表示しています。この端末には保存されません。' : share ? 'チェックはこの端末と講師のスプレッドシートに保存されています。' : 'チェックはこの端末に保存されています。機種変更の前に「バックアップをコピー」で控えておきましょう。';
+  $('#sumdetail').innerHTML = Object.keys(DIV).map(k=>{ const s=divStats(k); return `<div class="sumrow"><span>${DIV[k].label}</span><div class="track"><div class="fill" style="width:${s.p}%;background:var(${DIV[k].c})"></div></div><span>${s.d}/${s.n}</span></div>`; }).join('') + shareHtml(true) + `<div class="sync">${sync}</div><div class="bk"${VIEW?' hidden':''}><button class="reset" id="bkCopy">バックアップをコピー</button><button class="reset" id="bkRestore">バックアップから復元</button></div><div class="bkmsg" id="bkmsg" role="status"></div>`;
   $('#sumhead').setAttribute('aria-expanded', state.sumOpen);
   $('#sumdetail').hidden = !state.sumOpen;
 }
@@ -715,6 +743,7 @@ $('#sheet').addEventListener('click',e=>{
 // チェック・お気に入り・詳しく見る（シートと検索結果で共通）
 function handleAct(e){
   const b=e.target.closest('[data-act]'); if(!b) return false;
+  if(VIEW && b.dataset.act!=='note'){ flash('閲覧専用のため、ここではチェックできません'); return false; }
   const id=b.closest('.act').dataset.id;
   if(b.dataset.act==='tick'){ if(store.c[id]) delete store.c[id]; else store.c[id]=1; persist(); }
   else if(b.dataset.act==='fav'){ if(store.f[id]) delete store.f[id]; else store.f[id]=1; persist(); }
@@ -744,7 +773,7 @@ document.addEventListener('click',async e=>{
 (function(){
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   let dismissed=false; try{ dismissed=localStorage.getItem(LS+':installHidden')==='1'; }catch(_){}
-  if(standalone||dismissed) return;
+  if(standalone||dismissed||VIEW) return;
   const bar=$('#install'), txt=$('#installText'), btn=$('#installBtn');
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   let deferred=null;

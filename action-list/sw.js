@@ -1,5 +1,5 @@
 // オフラインでも開けるようにするキャッシュ。index.html を更新したら VERSION を上げる。
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = 'action-list-' + VERSION;
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
