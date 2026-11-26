@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <mask id="out">
+      <rect x="-10" y="-10" width="84" height="84" fill="#fff"/>
+      <rect x="26.65" y="6.15" width="10.9" height="51.7" rx="5.45" fill="#000"/>
+      <rect x="5.95" y="25.85" width="52.1" height="11.3" rx="5.65" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="none" stroke="#702838" stroke-width="1.25" stroke-linejoin="round">
+    <rect x="26.65" y="6.15" width="10.9" height="51.7" rx="5.45"/>
+    <rect x="5.95" y="25.85" width="52.1" height="11.3" rx="5.65"/>
+    <g mask="url(#out)">
+      <circle cx="21.2" cy="20.4" r="5.8"/>
+      <circle cx="43.0" cy="42.6" r="5.8"/>
+    </g>
+  </g>
+</svg>
